@@ -1,0 +1,12 @@
+[project]
+name = "hc-marimo"
+version = "0.1.0"
+description = "The Homicidal Chauffeur: a differential game explored with SymPy in a marimo notebook"
+requires-python = ">=3.10"
+dependencies = [
+    "marimo>=0.20.4",
+    "sympy>=1.13",
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "matplotlib>=3.8",
+]
