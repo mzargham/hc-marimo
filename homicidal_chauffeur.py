@@ -641,11 +641,14 @@ def parameter_sliders(mo):
 
     **Domain constraints** (to keep us in the interesting regime):
 
-    - $v_E \leq 0.75\,v_P$ — the evader must be slower.
-      When $v_E / v_P \to 1$, the pursuer's speed advantage vanishes and
-      capture becomes trivial to avoid regardless of turning. We allow
-      $w$ up to $0.75$ so you can explore what happens as the evader
-      gets faster, but the most interesting dynamics occur for $w \lesssim 0.5$.
+    - $0 < v_E < v_P$ — the full physical range is available. At the
+      boundary cases: when $v_E / v_P \to 0$, the evader is nearly
+      stationary and the problem degenerates into simple Dubins-path
+      pursuit — the turning constraint barely matters. When
+      $v_E / v_P \to 1$, the pursuer's speed advantage vanishes and
+      capture becomes trivial to avoid regardless of turning. The most
+      interesting dynamics occur for $w \in [0.25, 0.5]$, where the
+      interplay between speed advantage and turning constraint is decisive.
 
     - $\omega_{\max} \in [0.5, 3.0]$ — the pursuer's maximum turn rate.
       Lower values mean a large, sluggish turning circle (harder to catch
@@ -661,7 +664,7 @@ def parameter_sliders(mo):
 @app.cell
 def create_sliders(mo):
     v_E_slider = mo.ui.slider(
-        start=0.05, stop=0.75, step=0.05, value=0.45,
+        start=0.05, stop=0.95, step=0.05, value=0.45,
         label=r"$v_E$ (evader max speed)"
     )
     omega_max_slider = mo.ui.slider(
