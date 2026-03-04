@@ -1337,6 +1337,82 @@ def vector_field_plot(ell_tilde_val, mo, np, plt, w_val):
 
 
 @app.cell
+def evader_radial_field(ell_tilde_val, mo, np, plt, w_val):
+    _fig, _ax = plt.subplots(1, 1, figsize=(8, 8))
+
+    # Same grid as pursuer vector field
+    _grid_lim = 4.0
+    _n_grid = 25
+    _x1_grid, _x2_grid = np.meshgrid(
+        np.linspace(-_grid_lim, _grid_lim, _n_grid),
+        np.linspace(-_grid_lim, _grid_lim, _n_grid),
+    )
+
+    # Radial assumption: p ∝ x  →  psi* = atan2(x1, x2)
+    # Evader velocity: (w * x1/r, w * x2/r)
+    _r = np.sqrt(_x1_grid**2 + _x2_grid**2)
+    _r_safe = np.where(_r > 0, _r, 1.0)
+    _u = w_val * _x1_grid / _r_safe
+    _v = w_val * _x2_grid / _r_safe
+
+    _ax.quiver(
+        _x1_grid, _x2_grid,
+        _u / w_val, _v / w_val,  # unit vectors, colored by distance
+        _r,
+        cmap='coolwarm',
+        alpha=0.7,
+        pivot='mid',
+        scale=30,
+    )
+
+    # Terminal circle
+    _theta = np.linspace(0, 2 * np.pi, 200)
+    _ax.plot(ell_tilde_val * np.cos(_theta),
+            ell_tilde_val * np.sin(_theta),
+            'k--', linewidth=1, alpha=0.5, label='Terminal circle')
+
+    _ax.plot(0, 0, 'k+', markersize=12, markeredgewidth=2)
+    _ax.set_xlabel(r'$x_1$ (perpendicular)')
+    _ax.set_ylabel(r'$x_2$ (along heading)')
+    _ax.set_aspect('equal')
+    _ax.set_title(
+        rf"Evader's Optimal Heading — Radial Approximation "
+        rf"($w = {w_val:.3f}$, $\tilde{{\ell}} = {ell_tilde_val:.3f}$)"
+    )
+    _ax.legend(loc='lower right', fontsize=9)
+    _ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    mo.vstack([
+        _fig,
+        mo.md(
+            r"""
+            **Simplifying assumption:** $\mathbf{p} \propto \mathbf{x}$
+            — the costate is aligned with the position vector. This is
+            **exact on the terminal circle** (by transversality:
+            $\mathbf{p}(T) = \lambda\,\mathbf{x}(T)$), and gives the
+            intuitive picture: the evader runs **radially away** from
+            the pursuer.
+
+            Under this assumption, $\psi^* = \text{atan2}(x_1, x_2)$
+            at every point, and the evader's heading depends only on
+            *where* it is relative to the pursuer — always directly away.
+            The arrows are colored by distance from the origin (pursuer):
+            **red** = far, **blue** = close.
+
+            This is a useful first approximation, but it is only exact
+            at the terminal surface. Away from capture, the costate
+            **rotates** along characteristics (§6 proved
+            $\dot{\mathbf{p}} = \varphi J \mathbf{p}$), so the true
+            optimal heading departs from radial. We will see exactly how
+            it departs once we compute the backward trajectories in §8.
+            """
+        )
+    ])
+    return
+
+
+@app.cell
 def lambdify_ode(
     f1,
     f2,
@@ -1689,8 +1765,9 @@ def trajectory_plot(ell_tilde_val, mo, np, plt, trajectories, w_val):
 
     # Plot trajectories (backward time = forward in plot)
     _cmap = plt.cm.viridis
+    _mid = (len(trajectories) - 1) / 2.0
     for _i, _sol in enumerate(trajectories):
-        _color = _cmap(_i / max(len(trajectories) - 1, 1))
+        _color = _cmap(abs(_i - _mid) / max(_mid, 1))
         _ax.plot(_sol.y[0], _sol.y[1], '-', color=_color, linewidth=0.8,
                 alpha=0.7)
         _ax.plot(_sol.y[0, -1], _sol.y[1, -1], 'o', color=_color,
@@ -1723,11 +1800,13 @@ def trajectory_plot(ell_tilde_val, mo, np, plt, trajectories, w_val):
             both sides.
 
             **Reading the colors:** trajectories are colored by their
-            starting angle $\alpha$ on the usable arc — from purple
-            ($\alpha$ near $\arcsin w$) to yellow ($\alpha$ near
-            $\pi - \arcsin w$). The colored dots mark each trajectory's
-            position at $\tau = T_{\text{horizon}}$, the farthest point
-            reached by the backward integration.
+            distance from the **center** of the usable arc — the
+            colormap is folded so that mirrored characteristics on
+            opposite sides of the $x_2$ axis share the same color,
+            making the reflection symmetry of the solution visually
+            apparent. The colored dots mark each trajectory's position
+            at $\tau = T_{\text{horizon}}$, the farthest point reached
+            by the backward integration.
 
             The pursuer sits at the origin (black cross). Trajectories spiral
             outward because the pursuer's turning constraint forces curved
@@ -1746,6 +1825,180 @@ def trajectory_plot(ell_tilde_val, mo, np, plt, trajectories, w_val):
             pursuer's **rotating body frame** — the turning radius constraint
             applies to the pursuer's lab-frame path, not to these relative
             trajectories.
+            """
+        )
+    ])
+    return
+
+
+@app.cell
+def evader_vector_field(ell_tilde_val, mo, np, plt, trajectories, w_val):
+    # ── Step 1: Collect (x1, x2, p1, p2, idx) from characteristics ──
+    # The costate (p₁, p₂) at each trajectory point IS the analytic ∇V —
+    # exact from the ODE integration. No interpolation needed.
+    _all_x1, _all_x2, _all_p1, _all_p2, _all_idx = [], [], [], [], []
+    _n_traj = len(trajectories)
+    for _i, _sol in enumerate(trajectories):
+        _x1, _x2, _p1, _p2 = _sol.y
+        _all_x1.append(_x1)
+        _all_x2.append(_x2)
+        _all_p1.append(_p1)
+        _all_p2.append(_p2)
+        _all_idx.append(np.full(len(_x1), _i))
+
+    _all_x1 = np.concatenate(_all_x1)
+    _all_x2 = np.concatenate(_all_x2)
+    _all_p1 = np.concatenate(_all_p1)
+    _all_p2 = np.concatenate(_all_p2)
+    _all_idx = np.concatenate(_all_idx)
+    _points = np.column_stack([_all_x1, _all_x2])
+
+    # ── Step 2: Arrow grid with half-step offset (no x1=0) ──
+    _x1_lim = 4.0
+    _x2_lim = 2.0
+    _n_x1_arr = 12
+    _n_x2_arr = 6
+    _x1_step = _x1_lim / _n_x1_arr
+    _x2_step = _x2_lim / _n_x2_arr
+    _x1_half = np.linspace(_x1_step / 2, _x1_lim - _x1_step / 2, _n_x1_arr)
+    _x2_arr = np.linspace(-_x2_lim + _x2_step / 2, _x2_lim - _x2_step / 2,
+                           2 * _n_x2_arr)
+    _x1_ahalf, _x2_agrid = np.meshgrid(_x1_half, _x2_arr)
+
+    # ── Step 3: Nearest trajectory point → analytic costate heading ──
+    _hflat = np.column_stack([_x1_ahalf.ravel(), _x2_agrid.ravel()])
+    _dists = np.linalg.norm(
+        _points[np.newaxis, :, :] - _hflat[:, np.newaxis, :], axis=2
+    )
+    _nearest = np.argmin(_dists, axis=1)
+    _min_dist = _dists[np.arange(len(_nearest)), _nearest]
+
+    # Costate at nearest point → unit heading
+    _p1_near = _all_p1[_nearest]
+    _p2_near = _all_p2[_nearest]
+    _norm = np.sqrt(_p1_near**2 + _p2_near**2)
+    _norm = np.where(_norm > 1e-12, _norm, 1.0)
+    _sin_half = (_p1_near / _norm).reshape(_x1_ahalf.shape)
+    _cos_half = (_p2_near / _norm).reshape(_x1_ahalf.shape)
+    _idx_half = _all_idx[_nearest].reshape(_x1_ahalf.shape)
+    _valid_half = _min_dist.reshape(_x1_ahalf.shape) < 1.0
+
+    # ── Step 4: Mirror to full grid for exact x1 symmetry ──
+    _sin_left = -_sin_half[:, ::-1]
+    _cos_left = _cos_half[:, ::-1]
+    _valid_left = _valid_half[:, ::-1]
+    _idx_left = (_n_traj - 1) - _idx_half[:, ::-1]
+
+    _sin_psi = np.concatenate([_sin_left, _sin_half], axis=1)
+    _cos_psi = np.concatenate([_cos_left, _cos_half], axis=1)
+    _valid = np.concatenate([_valid_left, _valid_half], axis=1)
+    _nearest_idx = np.concatenate([_idx_left, _idx_half], axis=1)
+
+    _x1_full = np.concatenate([-_x1_half[::-1], _x1_half])
+    _x1_grid, _x2_grid = np.meshgrid(_x1_full, _x2_arr)
+
+    # Folded colormap: mirrored characteristics share the same color
+    _cmap = plt.cm.viridis
+    _mid = (_n_traj - 1) / 2.0
+    _char_colors = _cmap(np.abs(_nearest_idx - _mid) / max(_mid, 1))
+
+    # ── Plot ──
+    _fig, _ax = plt.subplots(1, 1, figsize=(10, 6))
+
+    for _i in range(_x1_grid.shape[0]):
+        for _j in range(_x1_grid.shape[1]):
+            if _valid[_i, _j]:
+                _ax.quiver(
+                    _x1_grid[_i, _j], _x2_grid[_i, _j],
+                    _sin_psi[_i, _j], _cos_psi[_i, _j],
+                    color=_char_colors[_i, _j],
+                    alpha=0.7,
+                    pivot='mid',
+                    scale=30,
+                    width=0.004,
+                )
+
+    # Terminal circle
+    _theta = np.linspace(0, 2 * np.pi, 200)
+    _ax.plot(ell_tilde_val * np.cos(_theta),
+            ell_tilde_val * np.sin(_theta),
+            'k--', linewidth=1, alpha=0.5, label='Terminal circle')
+
+    # Usable part (bold)
+    _alpha_min = np.arcsin(min(w_val, 0.999))
+    _alpha_max = np.pi - _alpha_min
+    _usable = np.linspace(_alpha_min, _alpha_max, 100)
+    _ax.plot(ell_tilde_val * np.cos(_usable),
+            ell_tilde_val * np.sin(_usable),
+            'r-', linewidth=3, alpha=0.8, label='Usable part')
+
+    # Pursuer at origin
+    _ax.plot(0, 0, 'k+', markersize=12, markeredgewidth=2)
+
+    _ax.set_xlabel(r'$x_1$ (perpendicular)')
+    _ax.set_ylabel(r'$x_2$ (along heading)')
+    _ax.set_aspect('equal')
+    _ax.set_title(
+        rf"Evader's Optimal Heading Field "
+        rf"($w = {w_val:.3f}$, $\tilde{{\ell}} = {ell_tilde_val:.3f}$)"
+    )
+    _ax.legend(loc='lower right', fontsize=9)
+    _ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    mo.vstack([
+        _fig,
+        mo.md(
+            r"""
+            Earlier we assumed $\mathbf{p} \propto \mathbf{x}$ and got a
+            clean radial "run away" field. Now each arrow shows the
+            **analytic costate** $\nabla V$ at the nearest trajectory
+            point — the exact gradient from the ODE integration, not a
+            numerical approximation. Since $\mathbf{p} = \nabla V$, the
+            optimal heading is
+
+            $$\psi^* = \text{atan2}(p_1, p_2)$$
+
+            — the evader heads in the direction of **steepest increase
+            of capture time**. Using the costate directly from its
+            nearest characteristic avoids any interpolation across
+            characteristic families, ensuring headings are never
+            averaged across the singular surfaces from §7.
+
+            **Near the terminal circle** the headings are roughly radial
+            (transversality), confirming the simpler model. Farther out,
+            the evader **runs perpendicular** to the pursuer's heading
+            to exploit the turning constraint — a hallmark of the
+            Homicidal Chauffeur solution.
+
+            The **colors** partition the state space by nearest
+            characteristic (folded colormap, so mirrored pairs share
+            colors). Color boundaries approximate the **singular
+            surfaces** from §7. The $x_1 = 0$ axis is the **dispersal
+            line** — both left and right turns are equally optimal for
+            the pursuer. No arrows are placed on this line (the optimal
+            heading is singular there).
+
+            **Tiny arrows** near the terminal circle mark **transition
+            zones** where adjacent characteristics carry divergent
+            headings. By the mean value theorem, the heading field passes
+            through all intermediate values — including near-cancellation
+            directions — flagging real transitions in the solution
+            structure.
+
+            The **gap behind the pursuer** (small $|x_1|$, $x_2 < 0$)
+            is physical: no backward characteristics emanate from the
+            non-usable lower arc of the terminal circle — that is
+            precisely where the evader *cannot* be captured on the
+            boundary. This is the pursuer's **blind spot**: the pursuer
+            drives in the $+x_2$ direction and its minimum turning
+            radius prevents an immediate U-turn, so capture times
+            behind the pursuer are very long. Increase $T$ to see
+            characteristics curl into this region.
+
+            Other **blank areas** lie outside the backward reachable
+            set — increase $T$ with the slider above to extend
+            coverage.
             """
         )
     ])
