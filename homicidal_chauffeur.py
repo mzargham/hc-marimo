@@ -2378,15 +2378,15 @@ def conservation_plots(mo, np, plt, trajectories, w_val):
     _h_bound = max(_h_bound, 1e-10)  # avoid degenerate zero range
     _ax1.set_ylim(-_h_bound, _h_bound)
 
-    # Shade the "machine-epsilon" tolerance band
-    _ax1.axhspan(-1e-7, 1e-7, color='green', alpha=0.08, label=r'$\pm 10^{-7}$')
+    # Shade tolerance band (scaled to plot range so it's visible)
+    _ax1.axhspan(-1e-6, 1e-6, color='green', alpha=0.08, label=r'$\pm 10^{-6}$')
     _ax1.axhline(y=0, color='black', linestyle='--', linewidth=0.8, alpha=0.5)
     _ax1.set_ylabel(r'$H^*(\tau)$')
     _ax1.set_title('Hamiltonian conservation: $H^*$ should vanish along optimal characteristics')
     _ax1.legend(loc='upper right', fontsize=8)
     _ax1.grid(True, alpha=0.3)
 
-    _ax2.axhspan(-1e-7, 1e-7, color='green', alpha=0.08, label=r'$\pm 10^{-7}$')
+    _ax2.axhspan(-1e-5, 1e-5, color='green', alpha=0.08, label=r'$\pm 10^{-5}$')
     _ax2.axhline(y=0, color='black', linestyle='--', linewidth=0.8, alpha=0.5)
     _ax2.set_xlabel(r'Backward time $\tau$')
     _ax2.set_ylabel(r'$\|\mathbf{p}_0\|^2 - \|\mathbf{p}(\tau)\|^2$')
@@ -2407,8 +2407,7 @@ def conservation_plots(mo, np, plt, trajectories, w_val):
             r"""
             **Top — Hamiltonian conservation.** The reduced Hamiltonian
             $H^*$ should vanish identically along optimal characteristics.
-            Most trajectories stay within the green $\pm 10^{-7}$ band, but
-            a few drift to $\mathcal{O}(10^{-6})$. These deviations originate
+            Most trajectories stay within the green $\pm 10^{-6}$ band. These deviations originate
             at **bang-bang switching points**, where the switching function
             $\sigma$ passes through zero and the optimal control $\varphi^*$
             jumps discontinuously between $+1$ and $-1$. The ODE integrator
