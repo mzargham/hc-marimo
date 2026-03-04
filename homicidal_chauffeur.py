@@ -101,6 +101,34 @@ def history(mo):
 
 
 @app.cell
+def computational_tools(mo):
+    mo.md(r"""
+    ## Computational Tools
+
+    This notebook is built with [**marimo**](https://marimo.io), a reactive
+    Python notebook where cells automatically re-execute when their
+    dependencies change — move a slider and every downstream derivation
+    and plot updates instantly.
+
+    The symbolic derivations in §2–§7 are powered by
+    [**SymPy**](https://www.sympy.org), a computer algebra system written
+    in pure Python. SymPy lets us manipulate the Hamiltonian, derive
+    optimal controls, and prove conservation laws *exactly* — no
+    floating-point approximations until we choose to cross that bridge.
+
+    ```python
+    import sympy as sp
+    from sympy import symbols, cos, sin, atan2, sqrt, sign, simplify, diff, Matrix
+    ```
+
+    Later sections (§8–§10) introduce **NumPy**, **SciPy**, and
+    **matplotlib** for numerical simulation and visualization — we will
+    acknowledge them when we get there.
+    """)
+    return
+
+
+@app.cell
 def chase_demo_static(mo, np, plt):
     # Hardcoded demo data: one composite optimal chase showing a dispersal
     # surface crossing.  Two backward characteristics (alpha_A=40deg,
@@ -1391,12 +1419,34 @@ def lambdify_ode(
 
     mo.md(
         r"""
-        ## §8 — Numerical Trajectory Simulation
+        ## Numerical & Visualization Tools
 
-        We now cross the **SymPy → NumPy bridge**. The symbolic 4D ODE system
-        from §6 is converted to a fast numpy-callable function using
-        `sp.lambdify`. This lets us integrate trajectories numerically with
-        `scipy.integrate.solve_ivp`.
+        The symbolic derivations above give us exact expressions for the
+        optimal controls and the characteristic ODE system. To simulate
+        actual trajectories and visualize the results, we now introduce
+        three additional libraries.
+
+        **For numerics** — [**NumPy**](https://numpy.org) provides
+        efficient array computation, and
+        [**SciPy**](https://scipy.org)'s `solve_ivp` integrates the 4D
+        ODE system using adaptive Runge–Kutta methods. The
+        `sp.lambdify` function bridges the two worlds: it compiles SymPy
+        symbolic expressions into fast NumPy-callable functions.
+
+        **For visualization** —
+        [**matplotlib**](https://matplotlib.org) renders trajectory
+        plots, vector fields, isochrone maps, and conservation
+        diagnostics throughout §8–§10.
+
+        ```python
+        import numpy as np
+        from scipy.integrate import solve_ivp
+        import matplotlib.pyplot as plt
+        ```
+
+        ---
+
+        ## §8 — Numerical Trajectory Simulation
 
         The lambdified function takes state $(x_1, x_2, p_1, p_2)$ and
         parameter $w$, substitutes the optimal controls
@@ -2659,6 +2709,25 @@ def extensions(mo):
       *Dynamic Games and Applications* 7 (2017)
     - S. Coates & M. Pachter, "The Classical Homicidal Chauffeur Game,"
       *Dynamic Games and Applications* 9(1) (2019)
+
+    ### Software
+
+    - A. Agrawal & M. Scolnick, "marimo — an open-source reactive notebook
+      for Python" (2023), DOI:
+      [10.5281/zenodo.12735329](https://doi.org/10.5281/zenodo.12735329) —
+      [marimo.io](https://marimo.io)
+    - A. Meurer et al., "SymPy: symbolic computing in Python,"
+      *PeerJ Computer Science* 3:e103 (2017) —
+      [sympy.org](https://www.sympy.org)
+    - C.R. Harris et al., "Array programming with NumPy,"
+      *Nature* 585, 357–362 (2020) —
+      [numpy.org](https://numpy.org)
+    - P. Virtanen et al., "SciPy 1.0: fundamental algorithms for scientific
+      computing in Python," *Nature Methods* 17, 261–272 (2020) —
+      [scipy.org](https://scipy.org)
+    - J.D. Hunter, "Matplotlib: A 2D graphics environment,"
+      *Computing in Science & Engineering* 9(3), 90–95 (2007) —
+      [matplotlib.org](https://matplotlib.org)
     """)
     return
 
