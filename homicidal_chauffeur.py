@@ -50,6 +50,7 @@ def title(mo):
     *A [marimo](https://marimo.io) notebook exploring Rufus Isaacs'
     foundational pursuit-evasion problem through symbolic computation
     and numerical simulation.*
+    [[source code](https://github.com/mzargham/hc-marimo)]
 
     The mathematics is derived symbolically with
     [SymPy](https://www.sympy.org), then brought to life numerically
@@ -2149,10 +2150,26 @@ def physical_trajectories(
 
     _N = 300  # dense evaluation points per trajectory
 
+    def _adaptive_tau(sol, t0, t1, N):
+        """Build adaptive time grid with more points near σ≈0 switches."""
+        _nc = 200
+        _tc = np.linspace(t0, t1, _nc)
+        _sc = sol.sol(_tc)
+        _sig = _sc[3] * _sc[0] - _sc[2] * _sc[1]   # σ = p2*x1 - p1*x2
+        # Concentrate points where σ is near zero (bang-bang switches)
+        _eps = 0.05
+        _wt = 1.0 + 1.0 / (np.abs(_sig) + _eps)
+        _cdf = cumulative_trapezoid(_wt, _tc, initial=0)
+        _cdf /= _cdf[-1]
+        _u = np.linspace(0, 1, N)
+        _tau = np.interp(_u, _cdf, _tc)
+        _tau[0] = t0; _tau[-1] = t1                  # exact endpoints
+        return _tau
+
     def _lift_single(sol):
         """Lift one backward characteristic to forward-time lab frame."""
         _T = sol.t[-1]
-        _tau = np.linspace(0, _T, _N)
+        _tau = _adaptive_tau(sol, 0, _T, _N)
         _states = sol.sol(_tau)
         _x1, _x2, _p1, _p2 = _states
         _sigma = _p2 * _x1 - _p1 * _x2
@@ -2220,7 +2237,7 @@ def physical_trajectories(
 
     # Phase 1: characteristic A from capture (tau=0) to crossing
     _N1 = _N
-    _t1 = np.linspace(0, _tau_cA, _N1)
+    _t1 = _adaptive_tau(_sols_ab['A'], 0, _tau_cA, _N1)
     _s1 = _sols_ab['A'].sol(_t1)
     _x1_1, _x2_1, _p1_1, _p2_1 = _s1
     _phi1 = -np.sign(_p2_1 * _x1_1 - _p1_1 * _x2_1)
@@ -2234,7 +2251,7 @@ def physical_trajectories(
 
     # Phase 2: characteristic B from crossing onward
     _N2 = _N
-    _t2B = np.linspace(_tau_cB, _sols_ab['B'].t[-1], _N2)
+    _t2B = _adaptive_tau(_sols_ab['B'], _tau_cB, _sols_ab['B'].t[-1], _N2)
     _s2 = _sols_ab['B'].sol(_t2B)
     _x1_2, _x2_2, _p1_2, _p2_2 = _s2
     _phi2 = -np.sign(_p2_2 * _x1_2 - _p1_2 * _x2_2)
@@ -2420,7 +2437,11 @@ def physical_chase_plot(
 
             *Note:* the absolute orientation is arbitrary — we set
             $\theta = 0$ at the moment of capture. Only the relative
-            geometry is determined by the game.
+            geometry is determined by the game. The rendering uses
+            **adaptive sampling** — more evaluation points are placed
+            near bang-bang switching points (where $\sigma \approx 0$)
+            to resolve the sharp curvature reversals in the pursuer's
+            path.
             """
         )
     ])
