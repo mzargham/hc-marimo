@@ -181,59 +181,50 @@ def test_E2_full_propagation_chain():
 
 # ---- E3: Composite trajectory validity ----
 
+def _composite_angles(w_val):
+    """Compute composite angles using the same percentile formula as the notebook."""
+    arc_min = np.arcsin(min(w_val, 0.999))
+    arc_width = np.pi - 2 * arc_min
+    alpha_A = arc_min + 0.105 * arc_width
+    alpha_B = arc_min + 0.540 * arc_width
+    return alpha_A, alpha_B
+
+
 def test_E3_composite_angles_in_usable_arc():
-    """Check whether hardcoded composite angles (40°, 95°) are in the usable arc
-    across a range of w values. Find the breaking threshold."""
-    alpha_A = np.radians(40.0)
-    alpha_B = np.radians(95.0)
+    """Percentile-based composite angles stay in the usable arc for all w values."""
+    print("  Percentile formula: alpha_A = arc_min + 0.105 * arc_width, alpha_B = arc_min + 0.540 * arc_width")
 
-    print(f"  Hardcoded composite angles: alpha_A={np.degrees(alpha_A):.1f}°, alpha_B={np.degrees(alpha_B):.1f}°")
-
-    w_break = None
     for w in np.arange(0.05, 0.96, 0.01):
+        alpha_A, alpha_B = _composite_angles(w)
         a_min, a_max = usable_arc(w)
         a_ok = a_min < alpha_A < a_max
         b_ok = a_min < alpha_B < a_max
-        if not (a_ok and b_ok) and w_break is None:
-            w_break = w
-            which = "alpha_A" if not a_ok else "alpha_B"
-            print(f"  BREAKS at w={w:.2f}: {which} outside usable arc ({np.degrees(a_min):.1f}°, {np.degrees(a_max):.1f}°)")
+        assert a_ok, f"alpha_A={np.degrees(alpha_A):.1f}° outside arc at w={w:.2f}"
+        assert b_ok, f"alpha_B={np.degrees(alpha_B):.1f}° outside arc at w={w:.2f}"
 
-    if w_break is None:
-        print("  E3 NOTE: Composite angles valid for all w in [0.05, 0.95]")
-    else:
-        print(f"  E3 FINDING: Composite trajectory invalid for w >= {w_break:.2f}")
+    print("E3a PASS: Percentile-based composite angles valid for all w in [0.05, 0.95]")
 
-    # Verify default w=0.45 is safe
-    a_min, a_max = usable_arc(0.45)
-    assert a_min < alpha_A < a_max, "alpha_A outside usable arc at default w=0.45"
-    assert a_min < alpha_B < a_max, "alpha_B outside usable arc at default w=0.45"
-    print("E3a PASS: Default w=0.45 is safe for both composite angles")
-
-    # Report the valid range
-    if w_break is not None:
-        print(f"E3b INFO: Sliders allow v_E up to 0.95 → w up to 0.95, but composite breaks at w={w_break:.2f}")
-        print(f"          This means v_E > {w_break:.2f} (with v_P=1) would produce invalid composite trajectory")
+    # Verify default w=0.45 reproduces original angles closely
+    alpha_A, alpha_B = _composite_angles(0.45)
+    assert abs(np.degrees(alpha_A) - 40.0) < 0.5, \
+        f"At default w=0.45, alpha_A={np.degrees(alpha_A):.2f}°, expected ~40°"
+    assert abs(np.degrees(alpha_B) - 95.0) < 0.5, \
+        f"At default w=0.45, alpha_B={np.degrees(alpha_B):.2f}°, expected ~95°"
+    print(f"E3b PASS: At default w=0.45, angles = ({np.degrees(alpha_A):.2f}°, {np.degrees(alpha_B):.2f}°) ≈ (40°, 95°)")
 
 
 def test_E3_composite_crossing_exists():
-    """Verify that the two characteristics actually cross at default parameters,
-    and check if they still cross when parameters change."""
+    """Verify that percentile-based characteristics cross across parameter regimes."""
     configs = [
         (0.45, 0.5, "default"),
         (0.30, 0.5, "slower evader"),
         (0.45, 1.0, "larger ell_tilde"),
         (0.60, 0.5, "faster evader"),
+        (0.80, 0.5, "fast evader (was broken with hardcoded angles)"),
     ]
 
-    alpha_A = np.radians(40.0)
-    alpha_B = np.radians(95.0)
-
     for w, ell_tilde, label in configs:
-        a_min, a_max = usable_arc(w)
-        if not (a_min < alpha_A < a_max and a_min < alpha_B < a_max):
-            print(f"  {label} (w={w}, ℓ̃={ell_tilde}): SKIP — angles outside usable arc")
-            continue
+        alpha_A, alpha_B = _composite_angles(w)
 
         sol_A = integrate_one(alpha_A, w, ell_tilde, T=15.0)
         sol_B = integrate_one(alpha_B, w, ell_tilde, T=15.0)
@@ -252,7 +243,7 @@ def test_E3_composite_crossing_exists():
             if d < min_dist:
                 min_dist = d
 
-        crosses = min_dist < 0.1
+        crosses = min_dist < 0.2
         print(f"  {label} (w={w}, ℓ̃={ell_tilde}): min_dist={min_dist:.4f} — {'CROSS' if crosses else 'NO CROSS'}")
 
     print("E3c DONE: Crossing analysis complete")

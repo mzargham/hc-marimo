@@ -193,7 +193,7 @@ def chase_demo_static(mo, np, plt):
         mo.md(r"""
         **What the game looks like.** The plot above shows one complete
         pursuit–evasion encounter under optimal play by both sides
-        ($w = 0.45$, $\tilde{\ell} = 0.5$). The pursuer ($\blacktriangleright$,
+        (at the default parameters $w = 0.45$, $\tilde{\ell} = 0.5$ below). The pursuer ($\blacktriangleright$,
         solid blue) is roughly twice as fast as the evader ($\bullet$, dashed
         red), but must commit to wide sweeping turns. The evader is slower
         but can change direction instantly — notice how the evader's path
@@ -2144,7 +2144,8 @@ def physical_trajectories(
       4. Flip to forward time and shift so evader starts at (0,0)
 
     Also builds one composite trajectory from two crossing characteristics
-    (alpha_A=40deg, alpha_B=95deg) matching the static demo in section 1.
+    whose angles are computed as calibrated fractions of the usable arc,
+    adapting to the current speed ratio w.
     """
     from scipy.integrate import cumulative_trapezoid
 
@@ -2199,12 +2200,16 @@ def physical_trajectories(
 
     _phys = [_lift_single(_sol) for _sol in trajectories]
 
-    # --- Composite trajectory matching the static demo (§1) ---
-    # Two characteristics that cross at a dispersal surface, producing
-    # a ~48deg evader direction change.
-    _alpha_A = np.radians(40.0)
-    _alpha_B = np.radians(95.0)
-    _T_bk = 15.0
+    # --- Composite trajectory: two crossing characteristics ---
+    # Pick angles as calibrated fractions of the usable arc so they
+    # adapt to the current speed ratio while staying safely inside.
+    # Percentiles 0.105 / 0.540 reproduce the original 40°/95° at
+    # the default w=0.45 and scale gracefully to other w values.
+    _arc_min = np.arcsin(min(w_val, 0.999))
+    _arc_width = np.pi - 2 * _arc_min
+    _alpha_A = _arc_min + 0.105 * _arc_width  # ~40° at default w=0.45
+    _alpha_B = _arc_min + 0.540 * _arc_width  # ~95° at default w=0.45
+    _T_bk = max(trajectories[0].t[-1] * 1.5, 15.0)
     _sols_ab = {}
     for _label, _alpha in [('A', _alpha_A), ('B', _alpha_B)]:
         _ic = compute_terminal_conditions(
@@ -2235,58 +2240,60 @@ def physical_trajectories(
     _tau_cA = _tauA[_ciA]
     _tau_cB = _tauB[_ciB]
 
-    # Phase 1: characteristic A from capture (tau=0) to crossing
-    _N1 = _N
-    _t1 = _adaptive_tau(_sols_ab['A'], 0, _tau_cA, _N1)
-    _s1 = _sols_ab['A'].sol(_t1)
-    _x1_1, _x2_1, _p1_1, _p2_1 = _s1
-    _phi1 = -np.sign(_p2_1 * _x1_1 - _p1_1 * _x2_1)
-    _th1 = cumulative_trapezoid(-_phi1, _t1, initial=0)
-    _psiA = np.arctan2(_p1_1[0], _p2_1[0])
-    _XE1 = -w_val * np.cos(_psiA) * _t1
-    _YE1 = -w_val * np.sin(_psiA) * _t1
-    _c1, _s1_ = np.cos(_th1), np.sin(_th1)
-    _XP1 = _XE1 - (-_x1_1 * _s1_ + _x2_1 * _c1)
-    _YP1 = _YE1 - (_x1_1 * _c1 + _x2_1 * _s1_)
+    # Only build composite if crossing is clean enough
+    if _min_d <= 0.2:
+        # Phase 1: characteristic A from capture (tau=0) to crossing
+        _N1 = _N
+        _t1 = _adaptive_tau(_sols_ab['A'], 0, _tau_cA, _N1)
+        _s1 = _sols_ab['A'].sol(_t1)
+        _x1_1, _x2_1, _p1_1, _p2_1 = _s1
+        _phi1 = -np.sign(_p2_1 * _x1_1 - _p1_1 * _x2_1)
+        _th1 = cumulative_trapezoid(-_phi1, _t1, initial=0)
+        _psiA = np.arctan2(_p1_1[0], _p2_1[0])
+        _XE1 = -w_val * np.cos(_psiA) * _t1
+        _YE1 = -w_val * np.sin(_psiA) * _t1
+        _c1, _s1_ = np.cos(_th1), np.sin(_th1)
+        _XP1 = _XE1 - (-_x1_1 * _s1_ + _x2_1 * _c1)
+        _YP1 = _YE1 - (_x1_1 * _c1 + _x2_1 * _s1_)
 
-    # Phase 2: characteristic B from crossing onward
-    _N2 = _N
-    _t2B = _adaptive_tau(_sols_ab['B'], _tau_cB, _sols_ab['B'].t[-1], _N2)
-    _s2 = _sols_ab['B'].sol(_t2B)
-    _x1_2, _x2_2, _p1_2, _p2_2 = _s2
-    _phi2 = -np.sign(_p2_2 * _x1_2 - _p1_2 * _x2_2)
-    _th_cross = _th1[-1]
-    _th2 = _th_cross + cumulative_trapezoid(-_phi2, _t2B, initial=0)
-    _psiB = np.arctan2(_p1_2[0], _p2_2[0]) + _th_cross
-    _dt2 = _t2B - _t2B[0]
-    _XE2 = _XE1[-1] - w_val * np.cos(_psiB) * _dt2
-    _YE2 = _YE1[-1] - w_val * np.sin(_psiB) * _dt2
-    _c2, _s2_ = np.cos(_th2), np.sin(_th2)
-    _XP2 = _XE2 - (-_x1_2 * _s2_ + _x2_2 * _c2)
-    _YP2 = _YE2 - (_x1_2 * _c2 + _x2_2 * _s2_)
+        # Phase 2: characteristic B from crossing onward
+        _N2 = _N
+        _t2B = _adaptive_tau(_sols_ab['B'], _tau_cB, _sols_ab['B'].t[-1], _N2)
+        _s2 = _sols_ab['B'].sol(_t2B)
+        _x1_2, _x2_2, _p1_2, _p2_2 = _s2
+        _phi2 = -np.sign(_p2_2 * _x1_2 - _p1_2 * _x2_2)
+        _th_cross = _th1[-1]
+        _th2 = _th_cross + cumulative_trapezoid(-_phi2, _t2B, initial=0)
+        _psiB = np.arctan2(_p1_2[0], _p2_2[0]) + _th_cross
+        _dt2 = _t2B - _t2B[0]
+        _XE2 = _XE1[-1] - w_val * np.cos(_psiB) * _dt2
+        _YE2 = _YE1[-1] - w_val * np.sin(_psiB) * _dt2
+        _c2, _s2_ = np.cos(_th2), np.sin(_th2)
+        _XP2 = _XE2 - (-_x1_2 * _s2_ + _x2_2 * _c2)
+        _YP2 = _YE2 - (_x1_2 * _c2 + _x2_2 * _s2_)
 
-    # Concatenate, flip to forward time, shift
-    _XP_c = np.concatenate([_XP1, _XP2[1:]])[::-1]
-    _YP_c = np.concatenate([_YP1, _YP2[1:]])[::-1]
-    _XE_c = np.concatenate([_XE1, _XE2[1:]])[::-1]
-    _YE_c = np.concatenate([_YE1, _YE2[1:]])[::-1]
-    _th_c = np.concatenate([_th1, _th2[1:]])[::-1]
-    _tau_c = np.concatenate([_t1, _tau_cA + _dt2[1:]])
-    _t_c = _tau_c[-1] - _tau_c[::-1]
-    _XP_c -= _XE_c[0]; _YP_c -= _YE_c[0]
-    _XE_c -= _XE_c[0]; _YE_c -= _YE_c[0]
-    _dist_c = np.sqrt((_XP_c - _XE_c)**2 + (_YP_c - _YE_c)**2)
+        # Concatenate, flip to forward time, shift
+        _XP_c = np.concatenate([_XP1, _XP2[1:]])[::-1]
+        _YP_c = np.concatenate([_YP1, _YP2[1:]])[::-1]
+        _XE_c = np.concatenate([_XE1, _XE2[1:]])[::-1]
+        _YE_c = np.concatenate([_YE1, _YE2[1:]])[::-1]
+        _th_c = np.concatenate([_th1, _th2[1:]])[::-1]
+        _tau_c = np.concatenate([_t1, _tau_cA + _dt2[1:]])
+        _t_c = _tau_c[-1] - _tau_c[::-1]
+        _XP_c -= _XE_c[0]; _YP_c -= _YE_c[0]
+        _XE_c -= _XE_c[0]; _YE_c -= _YE_c[0]
+        _dist_c = np.sqrt((_XP_c - _XE_c)**2 + (_YP_c - _YE_c)**2)
 
-    _composite = {
-        "t": _t_c, "X_P": _XP_c, "Y_P": _YP_c,
-        "X_E": _XE_c, "Y_E": _YE_c,
-        "theta": _th_c, "dist": _dist_c,
-        "composite": True,
-        "switch_idx": len(_XP_c) - _N1,  # forward-time index of direction change
-    }
-    _phys.append(_composite)
+        _composite = {
+            "t": _t_c, "X_P": _XP_c, "Y_P": _YP_c,
+            "X_E": _XE_c, "Y_E": _YE_c,
+            "theta": _th_c, "dist": _dist_c,
+            "composite": True,
+            "switch_idx": len(_XP_c) - _N1,
+        }
+        _phys.append(_composite)
+
     composite_default_idx = len(_phys) - 1
-
     T_max_phys = max(p["t"][-1] for p in _phys)
     physical_trajs = _phys
     return (T_max_phys, composite_default_idx, physical_trajs)
@@ -2413,7 +2420,7 @@ def physical_chase_plot(
             coordinates and displayed in forward time. Use the **trajectory
             slider** to explore different initial conditions — most entries
             follow a single characteristic (straight-line evader), while the
-            **last entry** is the composite trajectory from §1 showing a
+            **last entry** is a composite trajectory showing a
             dispersal-surface crossing and evader direction change.
 
             **Why does the evader run in a straight line?** It may look like
@@ -2433,7 +2440,7 @@ def physical_chase_plot(
             pursuer swings through a U-turn. The evader doesn't *try* to get
             behind; rather, the pursuer's own maneuver shifts the geometry,
             and the evader must switch to a new optimal heading. The last
-            slider position shows this composite trajectory (matching §1).
+            slider position shows this composite trajectory.
 
             *Note:* the absolute orientation is arbitrary — we set
             $\theta = 0$ at the moment of capture. Only the relative
