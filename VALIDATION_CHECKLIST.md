@@ -242,6 +242,104 @@ notebook integration.
 
 ---
 
+## I. Visualization Verification (Phase 5)
+
+### Static diagrams
+
+- [ ] **I1.** Problem geometry (V1): Pursuer heading arrow points in the
+  theta direction (CCW from x-axis). Minimum turning circle has correct
+  radius relative to the pursuer. Capture radius circle is visibly
+  smaller than turning circle. Evader velocity arrow points at angle psi.
+
+### Reactive plots
+
+- [ ] **I2.** Usable part (V3): Increasing w via slider visibly shrinks
+  the red usable arc. At w = 0.05, the arc spans nearly the full upper
+  semicircle. At w = 0.45, it shrinks to a small arc near alpha = pi/2.
+
+- [ ] **I3.** Usable part (V3): The costate arrows (blue) point radially
+  outward on the usable arc. Arrow length increases toward the endpoints
+  of the usable arc (where lambda diverges).
+
+- [ ] **I4.** Vector field (V6): The switching surface at x1 = 0 is visible
+  as a discontinuity in the quiver plot (arrows change direction across
+  this line). For x1 > 0 the field rotates clockwise (phi = -1); for
+  x1 < 0 it rotates counterclockwise (phi = +1).
+
+- [ ] **I5.** Vector field (V6): Changing w via slider shows the evader's
+  influence: at w ~ 0, the field is dominated by the pursuer's rotation;
+  at w ~ 0.5, the field visibly tilts (evader contribution along psi = 0).
+
+### Animation
+
+- [ ] **I6.** Time animation (V4): At tau = 0, all trajectory dots sit on
+  the usable arc of the terminal circle. At tau = T_horizon, the full
+  trajectories are visible and match the static trajectory_plot.
+
+- [ ] **I7.** Time animation (V4): Scrubbing the slider smoothly reveals
+  trajectories building outward. No visual glitches, jumps, or missing
+  segments. Bang-bang switching kinks appear as trajectories cross x1 = 0.
+
+### Conservation plots
+
+- [ ] **I8.** Conservation (V5): The H*(t) plot shows all lines clustered
+  within +/- 1e-6 of zero. No outliers or drift trends.
+
+- [ ] **I9.** Conservation (V5): The ||p_0||^2 - ||p||^2 plot shows all
+  lines clustered near zero. Any drift is consistent with numerical
+  integration error on high-lambda trajectories (see narrative).
+
+### Forward-time physical chase (§9)
+
+- [ ] **I10.** Physical chase: At t=0 (start), pursuer and evader are far
+  apart. At t=T (capture), the pursuer's capture circle encloses the evader.
+
+- [ ] **I11.** Physical chase: Pursuer triangles point in a physically
+  reasonable heading direction. Turning is smooth and respects the minimum
+  turning radius (no instantaneous direction reversals in heading).
+
+- [ ] **I12.** Physical chase: Single-characteristic trajectories show
+  straight-line evader paths. The composite trajectory (last slider position)
+  shows a visible direction change (~48deg) at the dispersal surface.
+
+- [ ] **I13.** Physical chase: The composite trajectory (last slider
+  position, default) visually matches the static demo in §1 — same
+  general shape, same direction-change behavior. (Both use w=0.45,
+  ℓ̃=0.5, alpha_A=40deg, alpha_B=95deg.)
+
+### Static demo (§1)
+
+- [ ] **I14.** Static demo: The evader path has a visible kink (diamond
+  marker) where the heading changes by ~48deg. Both segments before and
+  after the kink are approximately straight lines.
+
+- [ ] **I15.** Static demo: The pursuer path shows smooth wide turns
+  consistent with a minimum turning radius constraint. The capture circle
+  encloses the evader at the final position.
+
+- [ ] **I16.** Static demo: Annotations (Pursuer start, Evader start,
+  Direction change, Capture) are legible and correctly positioned.
+
+### Narrative coherence
+
+- [ ] **N1.** The static demo (§1) says "We will return to this
+  forward-time view with interactive controls in §9." Confirm that §9
+  header exists and the last slider position reproduces the static case.
+
+- [ ] **N2.** The §9 narrative explains *both* the straight-line result
+  (constant ψ_lab along single characteristics) and the direction-change
+  mechanism (dispersal surface crossing). Read both paragraphs and confirm
+  the explanation is clear and non-contradictory.
+
+- [ ] **N3.** The "why backward" section (§4) references "§9" for the
+  forward-time lift. Confirm this section actually appears as §9.
+
+- [ ] **N4.** Section numbering is sequential (§1–§12) with no gaps or
+  duplicates. Spot-check: §9 = Forward-Time Physical Chase, §10 = Backward
+  Reachable Set, §11 = Verification & Validation, §12 = Extensions.
+
+---
+
 ## D. Known Limitations & Open Questions
 
 1. **Test R1 is self-referential.** The test re-derives the dynamics using
@@ -271,3 +369,19 @@ notebook integration.
    constructs `f1`, `f2` in canonical form using the reduced symbols
    directly. Test T10 confirms the derivation and canonical form agree
    numerically. This is a SymPy limitation, not a mathematical error.
+
+5. **Composite trajectory is approximate.** The composite trajectory
+   (static demo + last dynamic slider position) stitches two backward
+   characteristics at their crossing in (x1, x2) space. This is a
+   first-order approximation of the true dispersal-surface crossing —
+   exact matching would require iterating to find the precise point where
+   both characteristics yield identical capture times (equal value
+   function). The current approach finds the closest spatial crossing
+   (dist ~0.008), which is sufficient for demonstration purposes but
+   may show small geometric artifacts.
+
+6. **Slider default vs static demo.** The v_E slider defaults to 0.45
+   (w=0.45) to match the static demo in §1. If the user changes w,
+   the composite trajectory recomputes with the new w but the hardcoded
+   alpha_A=40deg, alpha_B=95deg may no longer produce a meaningful
+   crossing. The composite is most informative near the default parameters.

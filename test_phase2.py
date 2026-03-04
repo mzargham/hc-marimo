@@ -598,6 +598,114 @@ def test_T14_usable_part_monotone():
     print("T14 PASS: Usable part width monotonically decreases with w")
 
 
+# ---- T15: Physical lift distance preservation ----
+
+def test_T15_physical_lift_distance():
+    """Euclidean distance in lab frame must match body-frame sqrt(x1^2 + x2^2)."""
+    from scipy.integrate import cumulative_trapezoid
+
+    w_val = 0.25
+    ell_tilde = 0.5
+    N = 300
+
+    # Integrate a backward trajectory with dense output
+    alpha = np.pi / 2
+    tc = compute_terminal_conditions(np.array([alpha]), w_val, ell_tilde)
+    y0 = tc[0]
+    sol = solve_ivp(
+        rhs_backward, [0, 8], y0, args=(w_val,),
+        method='RK45', max_step=0.02, rtol=1e-10, atol=1e-12,
+        dense_output=True,
+    )
+    assert sol.success, f"T15 FAIL: integration failed"
+
+    # Evaluate at dense points
+    tau = np.linspace(0, sol.t[-1], N)
+    states = sol.sol(tau)
+    x1, x2, p1, p2 = states
+
+    # Body-frame distance
+    dist_body = np.sqrt(x1**2 + x2**2)
+
+    # Lift to lab frame (same algorithm as physical_trajectories cell)
+    sigma = p2 * x1 - p1 * x2
+    phi_star = -np.sign(sigma)
+    dtheta_dtau = -phi_star
+    theta = cumulative_trapezoid(dtheta_dtau, tau, initial=0)
+
+    psi_body = np.arctan2(p1, p2)
+    psi_lab = psi_body + theta
+
+    dXE_dtau = -w_val * np.cos(psi_lab)
+    dYE_dtau = -w_val * np.sin(psi_lab)
+    X_E = np.concatenate([[0], cumulative_trapezoid(dXE_dtau, tau)])
+    Y_E = np.concatenate([[0], cumulative_trapezoid(dYE_dtau, tau)])
+
+    cos_th = np.cos(theta)
+    sin_th = np.sin(theta)
+    dx = -x1 * sin_th + x2 * cos_th
+    dy = x1 * cos_th + x2 * sin_th
+    X_P = X_E - dx
+    Y_P = Y_E - dy
+
+    # Lab-frame distance
+    dist_lab = np.sqrt((X_P - X_E)**2 + (Y_P - Y_E)**2)
+
+    # Compare
+    max_err = np.max(np.abs(dist_lab - dist_body))
+    assert max_err < 1e-4, f"T15 FAIL: distance mismatch, max err = {max_err:.2e}"
+    print(f"T15 PASS: lab-frame distance matches body-frame (max err = {max_err:.2e})")
+
+
+# ---- T16: Capture distance in physical coordinates ----
+
+def test_T16_physical_capture_distance():
+    """At capture (last forward time index), distance should equal ell_tilde."""
+    from scipy.integrate import cumulative_trapezoid
+
+    w_val = 0.25
+    ell_tilde = 0.5
+    N = 300
+
+    for alpha in [0.8, np.pi / 2, 2.0]:
+        if np.sin(alpha) <= w_val:
+            continue
+
+        tc = compute_terminal_conditions(np.array([alpha]), w_val, ell_tilde)
+        y0 = tc[0]
+        sol = solve_ivp(
+            rhs_backward, [0, 8], y0, args=(w_val,),
+            method='RK45', max_step=0.02, rtol=1e-10, atol=1e-12,
+            dense_output=True,
+        )
+        assert sol.success
+
+        tau = np.linspace(0, sol.t[-1], N)
+        states = sol.sol(tau)
+        x1, x2, p1, p2 = states
+
+        # At tau=0 (capture), distance in body frame
+        dist_capture_body = np.sqrt(x1[0]**2 + x2[0]**2)
+
+        # Lift and check lab-frame capture distance
+        sigma = p2 * x1 - p1 * x2
+        phi_star = -np.sign(sigma)
+        theta = cumulative_trapezoid(-phi_star, tau, initial=0)
+        cos_th = np.cos(theta)
+        sin_th = np.sin(theta)
+        dx = -x1 * sin_th + x2 * cos_th
+        dy = x1 * cos_th + x2 * sin_th
+
+        # At tau=0: X_E=0, Y_E=0, so dist = sqrt(dx[0]^2 + dy[0]^2)
+        dist_capture_lab = np.sqrt(dx[0]**2 + dy[0]**2)
+
+        err = abs(dist_capture_lab - ell_tilde)
+        assert err < 1e-6, \
+            f"T16 FAIL: capture dist={dist_capture_lab:.6f}, expected {ell_tilde} (alpha={alpha:.2f})"
+
+    print(f"T16 PASS: capture distance = ell_tilde in physical coordinates")
+
+
 # ---- Run all tests ----
 if __name__ == "__main__":
     print("=" * 60)
@@ -617,6 +725,8 @@ if __name__ == "__main__":
     test_T12_isochrone_symmetry()
     test_T13_small_w_stability()
     test_T14_usable_part_monotone()
+    test_T15_physical_lift_distance()
+    test_T16_physical_capture_distance()
     print("=" * 60)
     print("ALL TESTS PASSED")
     print("=" * 60)
