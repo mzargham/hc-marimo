@@ -43,12 +43,19 @@ def title(mo):
     mo.md(r"""
     # The Homicidal Chauffeur: A Differential Game
 
-    ## Symbolic Derivation & Interactive Simulation with SymPy
+    ## Symbolic Derivation & Interactive Simulation
 
     ---
 
-    *A marimo notebook exploring Rufus Isaacs' foundational pursuit-evasion
-    problem through symbolic computation and numerical simulation.*
+    *A [marimo](https://marimo.io) notebook exploring Rufus Isaacs'
+    foundational pursuit-evasion problem through symbolic computation
+    and numerical simulation.*
+
+    The mathematics is derived symbolically with
+    [SymPy](https://www.sympy.org), then brought to life numerically
+    with [NumPy](https://numpy.org) and
+    [SciPy](https://scipy.org), and visualized with
+    [matplotlib](https://matplotlib.org).
 
     **References:**
 
@@ -96,34 +103,6 @@ def history(mo):
     Isaacs' original inspiration was a guided torpedo pursuing a maneuvering
     ship. The problem was deliberately posed in unclassified language to
     enable open publication of research with direct military applications.
-    """)
-    return
-
-
-@app.cell
-def computational_tools(mo):
-    mo.md(r"""
-    ## Computational Tools
-
-    This notebook is built with [**marimo**](https://marimo.io), a reactive
-    Python notebook where cells automatically re-execute when their
-    dependencies change — move a slider and every downstream derivation
-    and plot updates instantly.
-
-    The symbolic derivations in §2–§7 are powered by
-    [**SymPy**](https://www.sympy.org), a computer algebra system written
-    in pure Python. SymPy lets us manipulate the Hamiltonian, derive
-    optimal controls, and prove conservation laws *exactly* — no
-    floating-point approximations until we choose to cross that bridge.
-
-    ```python
-    import sympy as sp
-    from sympy import symbols, cos, sin, atan2, sqrt, sign, simplify, diff, Matrix
-    ```
-
-    Later sections (§8–§10) introduce **NumPy**, **SciPy**, and
-    **matplotlib** for numerical simulation and visualization — we will
-    acknowledge them when we get there.
     """)
     return
 
@@ -1419,34 +1398,19 @@ def lambdify_ode(
 
     mo.md(
         r"""
-        ## Numerical & Visualization Tools
+        ## §8 — Numerical Trajectory Simulation
 
-        The symbolic derivations above give us exact expressions for the
-        optimal controls and the characteristic ODE system. To simulate
-        actual trajectories and visualize the results, we now introduce
-        three additional libraries.
-
-        **For numerics** — [**NumPy**](https://numpy.org) provides
-        efficient array computation, and
-        [**SciPy**](https://scipy.org)'s `solve_ivp` integrates the 4D
-        ODE system using adaptive Runge–Kutta methods. The
-        `sp.lambdify` function bridges the two worlds: it compiles SymPy
-        symbolic expressions into fast NumPy-callable functions.
-
-        **For visualization** —
-        [**matplotlib**](https://matplotlib.org) renders trajectory
-        plots, vector fields, isochrone maps, and conservation
-        diagnostics throughout §8–§10.
+        We now cross the **SymPy → NumPy bridge**. The symbolic 4D ODE
+        system from §6 is compiled into a fast NumPy-callable function
+        via `sp.lambdify`, then integrated numerically with SciPy's
+        `solve_ivp` (adaptive Runge–Kutta). matplotlib renders the
+        results.
 
         ```python
         import numpy as np
         from scipy.integrate import solve_ivp
         import matplotlib.pyplot as plt
         ```
-
-        ---
-
-        ## §8 — Numerical Trajectory Simulation
 
         The lambdified function takes state $(x_1, x_2, p_1, p_2)$ and
         parameter $w$, substitutes the optimal controls
