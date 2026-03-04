@@ -202,13 +202,13 @@ def chase_demo_static(mo, np, plt):
 
         Along each segment the evader runs in a straight line at maximum
         speed — this is optimal because the costate rotation exactly cancels
-        the pursuer's heading change (derived in §5–§6). But the game can
+        the pursuer's heading change (derived in §6). But the game can
         cross a surface in state space where two families of optimal
         characteristics meet; at that boundary the evader must switch to
         a new heading to remain on the optimal trajectory.
 
         Stars mark starting positions; the dashed gray circle is the
-        capture radius $\tilde{\ell}$. The pursuer's speed advantage
+        capture radius $\tilde{\ell}$ (defined in §3). The pursuer's speed advantage
         guarantees eventual capture, but the evader's strategy forces the
         pursuer through costly turning arcs, delaying capture as long as
         possible.
@@ -435,7 +435,7 @@ def problem_geometry_plot(mo, np, plt):
             heading $\theta$, constrained to turn within a circle of
             radius $R_{\min} = v_P / \omega_{\max}$ (dashed blue). The
             evader **E** (red dot) moves at speed $v_E < v_P$ in any
-            direction $\psi_{\mathrm{lab}}$. Capture occurs when
+            direction $\psi_{\text{lab}}$. Capture occurs when
             $\|P - E\| \leq \ell$ (gray dotted circle).
 
             The key tension: **P is faster but less agile.** The minimum
@@ -478,6 +478,7 @@ def reduction_setup(cos, diff, latex, mo, sin, sp, t):
         $$
         x_1 = -(x_E - x_P)\sin\theta + (y_E - y_P)\cos\theta
         $$
+
         $$
         x_2 = (x_E - x_P)\cos\theta + (y_E - y_P)\sin\theta
         $$
@@ -761,7 +762,7 @@ def game_formulation(mo):
 
     **Objective:** P minimizes $T$; E maximizes $T$ (or drives $T \to \infty$)
 
-    The **Value function** $V(\mathbf{x})$ gives the optimal capture time
+    The **value function** $V(\mathbf{x})$ gives the optimal capture time
     from state $\mathbf{x}$ under best play by both sides. It satisfies
     the **Hamilton-Jacobi-Isaacs (HJI) equation**:
 
@@ -1087,12 +1088,23 @@ def costate_conservation(
         $$
 
         SymPy confirms the result vanishes identically — the costate norm
-        is **conserved** along characteristics. This is a
-        consequence of the rotational structure of the adjoint equations —
-        the costate vector rotates but does not grow or shrink. This
-        conservation law serves as a **numerical verification check**: any
-        drift in $\|\mathbf{{p}}\|$ during integration indicates numerical
-        error.
+        is **conserved** along characteristics. In matrix form:
+        $\dot{{\mathbf{{p}}}} = \phi^* J \mathbf{{p}}$ where
+        $J = \bigl[\begin{{smallmatrix}}0 & -1 \\ 1 & 0\end{{smallmatrix}}\bigr]$
+        is a 90° rotation — the costate vector **rotates** at rate
+        $|\phi^*|$ in the body frame, but does not grow or shrink.
+
+        Since the body frame itself rotates at rate $\phi^*$ (the pursuer's
+        turn rate), the costate is **stationary in the lab frame**. The
+        evader's optimal heading
+        $\psi^*_{{\text{{lab}}}} = \psi^* + \theta$ therefore satisfies
+        $d\psi^*_{{\text{{lab}}}}/dt = 0$ — the evader runs in a **fixed
+        lab-frame direction** along each characteristic. This is why the
+        forward-time evader path is a straight line (§9).
+
+        This conservation law also serves as a **numerical verification
+        check**: any drift in $\|\mathbf{{p}}\|$ during integration
+        indicates numerical error.
         """
     )
     return
@@ -1286,9 +1298,9 @@ def vector_field_plot(ell_tilde_val, mo, np, plt, w_val):
                alpha=0.6, label=r'Switching surface $\sigma = 0$')
 
     # Annotate the two control regions
-    _ax.text(2.0, -3.5, r'$\varphi^* = -1$' + '\n(hard right)',
+    _ax.text(2.0, -3.5, r'$\phi^* = -1$' + '\n(hard right)',
             fontsize=10, ha='center', color='#444444', alpha=0.8)
-    _ax.text(-2.0, -3.5, r'$\varphi^* = +1$' + '\n(hard left)',
+    _ax.text(-2.0, -3.5, r'$\phi^* = +1$' + '\n(hard left)',
             fontsize=10, ha='center', color='#444444', alpha=0.8)
 
     # Terminal circle
@@ -1317,8 +1329,8 @@ def vector_field_plot(ell_tilde_val, mo, np, plt, w_val):
             optimal state velocity $(\dot{x}_1, \dot{x}_2)$ at each point,
             for a fixed costate direction $\mathbf{p} = (0, 1)$. This gives
             switching function $\sigma = x_1$, so the pursuer turns
-            **hard right** ($\varphi^* = -1$) when $x_1 > 0$ and
-            **hard left** ($\varphi^* = +1$) when $x_1 < 0$.
+            **hard right** ($\phi^* = -1$) when $x_1 > 0$ and
+            **hard left** ($\phi^* = +1$) when $x_1 < 0$.
 
             The green dashed line is the **switching surface** $\sigma = 0$
             ($x_1 = 0$). Notice how the flow direction reverses abruptly
@@ -1403,7 +1415,7 @@ def evader_radial_field(ell_tilde_val, mo, np, plt, w_val):
             This is a useful first approximation, but it is only exact
             at the terminal surface. Away from capture, the costate
             **rotates** along characteristics (§6 proved
-            $\dot{\mathbf{p}} = \varphi J \mathbf{p}$), so the true
+            $\dot{\mathbf{p}} = \phi J \mathbf{p}$), so the true
             optimal heading departs from radial. We will see exactly how
             it departs once we compute the backward trajectories in §8.
             """
@@ -1477,7 +1489,7 @@ def lambdify_ode(
         ## §8 — Numerical Trajectory Simulation
 
         We now cross the **SymPy → NumPy bridge**. The symbolic 4D ODE
-        system from §6 is compiled into a fast NumPy-callable function
+        system from §§5–6 is compiled into a fast NumPy-callable function
         via `sp.lambdify`, then integrated numerically with SciPy's
         `solve_ivp` (adaptive Runge–Kutta). matplotlib renders the
         results.
@@ -1817,8 +1829,8 @@ def trajectory_plot(ell_tilde_val, mo, np, plt, trajectories, w_val):
             **Sharp kinks** in the trajectories are **bang-bang switching
             points** — instants where the switching function
             $\sigma = p_2 x_1 - p_1 x_2$ crosses zero and the pursuer's
-            optimal control jumps from hard left ($\varphi = +1$) to hard
-            right ($\varphi = -1$) or vice versa. The position is continuous
+            optimal control jumps from hard left ($\phi = +1$) to hard
+            right ($\phi = -1$) or vice versa. The position is continuous
             but the curvature reverses abruptly. This is expected behavior
             for the optimal bang-bang control, not a numerical artifact.
             Note that these curves show the evader's position in the
@@ -1950,6 +1962,10 @@ def evader_vector_field(ell_tilde_val, mo, np, plt, trajectories, w_val):
         _fig,
         mo.md(
             r"""
+            **Reading the axes:** the pursuer sits at the origin and
+            drives **upward** (in the $+x_2$ direction). The evader's
+            position relative to the pursuer is $(x_1, x_2)$.
+
             Earlier we assumed $\mathbf{p} \propto \mathbf{x}$ and got a
             clean radial "run away" field. Now each arrow shows the
             **analytic costate** $\nabla V$ at the nearest trajectory
@@ -1969,7 +1985,11 @@ def evader_vector_field(ell_tilde_val, mo, np, plt, trajectories, w_val):
             (transversality), confirming the simpler model. Farther out,
             the evader **runs perpendicular** to the pursuer's heading
             to exploit the turning constraint — a hallmark of the
-            Homicidal Chauffeur solution.
+            Homicidal Chauffeur solution. This is visible in the §1
+            chase demo: the evader initially heads *toward* the pursuer
+            rather than away — running past the car to exploit the blind
+            spot behind it, where the turning constraint forces the
+            pursuer into a costly U-turn.
 
             The **colors** partition the state space by nearest
             characteristic (folded colormap, so mirrored pairs share
@@ -1978,13 +1998,6 @@ def evader_vector_field(ell_tilde_val, mo, np, plt, trajectories, w_val):
             line** — both left and right turns are equally optimal for
             the pursuer. No arrows are placed on this line (the optimal
             heading is singular there).
-
-            **Tiny arrows** near the terminal circle mark **transition
-            zones** where adjacent characteristics carry divergent
-            headings. By the mean value theorem, the heading field passes
-            through all intermediate values — including near-cancellation
-            directions — flagging real transitions in the solution
-            structure.
 
             The **gap behind the pursuer** (small $|x_1|$, $x_2 < 0$)
             is physical: no backward characteristics emanate from the
@@ -2565,9 +2578,9 @@ def reachable_set_plot(
             value function takes the **minimum** capture time at each point.
 
             The colored region is the **backward reachable set**: all states
-            from which the pursuer can guarantee capture within $T = 12$ time
-            units. Points outside this region require a longer chase or may
-            be unreachable altogether (if $w$ is too large).
+            from which the pursuer can guarantee capture within the
+            integration horizon. Points outside this region require a longer
+            chase or may be unreachable altogether (if $w$ is too large).
             """
         )
     ])
@@ -2596,18 +2609,19 @@ def hamiltonian_check(mo, np, trajectories, w_val):
         rf"""
         ### Numerical Conservation Check
 
-        Along all {len(trajectories)} computed trajectories:
+        We inspect two invariants along all {len(trajectories)} computed
+        trajectories to assess whether the observed deviations are
+        consistent with numerical artifacts or suggest a bug in the
+        derivation or code:
 
-        | Invariant | Max drift | Expected bound | Notes |
-        |---|---|---|---|
-        | $H^* = 0$ | ${max_H_drift:.2e}$ | $\lesssim 10^{{-5}}$ | Switching-point smoothing by RK45 |
-        | $\|\mathbf{{p}}\|^2 = \text{{const}}$ | ${max_p_drift:.2e}$ | $\lesssim 10^{{-4}}$ | Scales with $\|\mathbf{{p}}\|^2$; see discussion below |
+        | Invariant | Max deviation | Character |
+        |---|---|---|
+        | $H^*$ (Hamiltonian) | ${max_H_drift:.2e}$ | Bounded, localized at switching points |
+        | $\|\mathbf{{p}}\|^2$ (costate norm) | ${max_p_drift:.2e}$ | Scales with $\|\mathbf{{p}}\|^2$; largest on high-$\lambda$ trajectories |
 
-        The Hamiltonian should vanish identically along optimal
-        characteristics (it is the zero level set of the HJI equation).
-        The costate norm is an independent conservation law from §6.
-        See the plots below for per-trajectory detail on where drift
-        originates and why it remains benign.
+        The plots below show per-trajectory detail. We examine the
+        scale, pattern, and accumulation of these deviations to judge
+        whether they are benign.
         """
     )
     return
@@ -2648,20 +2662,15 @@ def conservation_plots(mo, np, plt, trajectories, w_val):
     _h_bound = max(_h_bound, 1e-10)  # avoid degenerate zero range
     _ax1.set_ylim(-_h_bound, _h_bound)
 
-    # Shade tolerance band (scaled to plot range so it's visible)
-    _ax1.axhspan(-1e-6, 1e-6, color='green', alpha=0.08, label=r'$\pm 10^{-6}$')
     _ax1.axhline(y=0, color='black', linestyle='--', linewidth=0.8, alpha=0.5)
     _ax1.set_ylabel(r'$H^*(\tau)$')
-    _ax1.set_title('Hamiltonian conservation: $H^*$ should vanish along optimal characteristics')
-    _ax1.legend(loc='upper right', fontsize=8)
+    _ax1.set_title(r'Hamiltonian $H^*$ along optimal characteristics')
     _ax1.grid(True, alpha=0.3)
 
-    _ax2.axhspan(-1e-5, 1e-5, color='green', alpha=0.08, label=r'$\pm 10^{-5}$')
     _ax2.axhline(y=0, color='black', linestyle='--', linewidth=0.8, alpha=0.5)
     _ax2.set_xlabel(r'Backward time $\tau$')
     _ax2.set_ylabel(r'$\|\mathbf{p}_0\|^2 - \|\mathbf{p}(\tau)\|^2$')
-    _ax2.set_title(r'Costate norm conservation: $\|\mathbf{p}_0\|^2 - \|\mathbf{p}\|^2$ should vanish')
-    _ax2.legend(loc='upper right', fontsize=8)
+    _ax2.set_title(r'Costate norm drift: $\|\mathbf{p}_0\|^2 - \|\mathbf{p}\|^2$')
     _ax2.grid(True, alpha=0.3)
 
     _fig.suptitle(
@@ -2675,44 +2684,37 @@ def conservation_plots(mo, np, plt, trajectories, w_val):
         _fig,
         mo.md(
             r"""
-            **Top — Hamiltonian conservation.** The reduced Hamiltonian
-            $H^*$ should vanish identically along optimal characteristics.
-            Most trajectories stay within the green $\pm 10^{-6}$ band. These deviations originate
-            at **bang-bang switching points**, where the switching function
-            $\sigma$ passes through zero and the optimal control $\varphi^*$
-            jumps discontinuously between $+1$ and $-1$. The ODE integrator
-            (RK45) cannot resolve an instantaneous jump — it smooths the
-            transition over a small interval, during which $H^*$ is evaluated
-            with a slightly stale control value. The error does not grow
-            secularly (it stays bounded at $10^{-6}$), confirming that the
-            integrator recovers after each switch.
+            **Top — Hamiltonian.** Along optimal characteristics, $H^*$
+            is a conserved quantity (the zero level set of the HJI
+            equation). The deviations we observe are localized at
+            **bang-bang switching points**, where the switching function
+            $\sigma$ passes through zero and the optimal control $\phi^*$
+            jumps between $+1$ and $-1$. The ODE integrator (RK45) smooths
+            this instantaneous jump over a small interval, producing a
+            transient $H^*$ spike that does not accumulate — each
+            trajectory returns to near zero after the switch.
 
-            **Bottom — Costate norm conservation.**
-            $\|\mathbf{p}_0\|^2 - \|\mathbf{p}(\tau)\|^2$ should vanish
-            identically, since §6 proved $\dot{\mathbf{p}} = \varphi J
-            \mathbf{p}$ (a rotation that preserves norm). Most trajectories
-            stay near zero, but one accumulates drift of
-            $\mathcal{O}(10^{-4})$ by $\tau \approx 8$. This is the
-            trajectory with the largest costate magnitude $\lambda(\alpha)$
-            (originating near the endpoint of the usable arc where
-            $\lambda \to \infty$). Large $\|\mathbf{p}\|$ amplifies absolute
-            integration error even when the *relative* error remains small:
-            a relative error of $10^{-8}$ on $\|\mathbf{p}\|^2 \sim 10^4$
-            produces an absolute deviation of $\sim 10^{-4}$. This is an
-            inherent limitation of fixed-tolerance adaptive integration on
-            a stiff problem.
+            **Bottom — Costate norm.** Since the costate rotates without
+            changing magnitude (§6: $\dot{\mathbf{p}} = \phi J
+            \mathbf{p}$), $\|\mathbf{p}\|^2$ is conserved. Most
+            trajectories show negligible drift. The one visible outlier
+            originates near the endpoint of the usable arc where
+            $\lambda(\alpha) \to \infty$, so its costate magnitude is
+            large. A small *relative* integration error on a large
+            $\|\mathbf{p}\|^2$ produces a correspondingly larger
+            *absolute* deviation — this is expected behavior for
+            fixed-tolerance adaptive integration.
 
-            **What would a genuine failure look like?** If the derivation or
-            numerical scheme were wrong, we would see: (1) $H^*$ drifting
+            **What would a genuine bug look like?** (1) $H^*$ drifting
             *secularly* — growing linearly or exponentially with $\tau$
-            rather than staying bounded; (2) costate norm deviations that
-            grow across *all* trajectories, not just the high-$\lambda$ ones;
-            or (3) deviations of $\mathcal{O}(1)$ rather than
-            $\mathcal{O}(10^{-6})$. None of these patterns are present. The
-            observed deviations are consistent with well-understood numerical
-            artifacts (switching-point smoothing and absolute-error scaling)
-            and are many orders of magnitude below any level that would affect
-            the qualitative structure of the reachable set.
+            rather than staying bounded; (2) costate norm deviations
+            growing across *all* trajectories, not just the
+            high-$\lambda$ ones; or (3) deviations of $\mathcal{O}(1)$
+            rather than $\mathcal{O}(10^{-6})$. None of these patterns
+            are present. The observed deviations are consistent with
+            well-understood numerical artifacts and are many orders of
+            magnitude below any level that would affect the qualitative
+            structure of the solution.
             """
         )
     ])
