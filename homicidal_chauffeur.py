@@ -101,9 +101,8 @@ def history(mo):
     submarine evasion — any scenario where a fast-but-constrained agent
     engages a slow-but-agile one.
 
-    Isaacs' original inspiration was a guided torpedo pursuing a maneuvering
-    ship. The problem was deliberately posed in unclassified language to
-    enable open publication of research with direct military applications.
+    Isaacs developed the problem at RAND in the 1950s, framing classified
+    pursuit-evasion research in accessible terms.
     """)
     return
 
@@ -209,10 +208,11 @@ def chase_demo_static(mo, np, plt):
         a new heading to remain on the optimal trajectory.
 
         Stars mark starting positions; the dashed gray circle is the
-        capture radius $\tilde{\ell}$ (defined in §3). The pursuer's speed advantage
-        guarantees eventual capture, but the evader's strategy forces the
-        pursuer through costly turning arcs, delaying capture as long as
-        possible.
+        capture radius $\tilde{\ell}$ (defined in §3). For these
+        parameter values the pursuer **can** capture the evader, but
+        the evader's strategy forces costly turning arcs, delaying
+        capture as long as possible. (Speed alone does not guarantee
+        capture — see §10 on deadlock.)
 
         The rest of this notebook derives the **optimal strategies** for both
         players from first principles, computes the resulting trajectories,
@@ -1349,81 +1349,6 @@ def vector_field_plot(ell_tilde_val, mo, np, plt, w_val):
     return
 
 
-@app.cell
-def evader_radial_field(ell_tilde_val, mo, np, plt, w_val):
-    _fig, _ax = plt.subplots(1, 1, figsize=(8, 8))
-
-    # Same grid as pursuer vector field
-    _grid_lim = 4.0
-    _n_grid = 25
-    _x1_grid, _x2_grid = np.meshgrid(
-        np.linspace(-_grid_lim, _grid_lim, _n_grid),
-        np.linspace(-_grid_lim, _grid_lim, _n_grid),
-    )
-
-    # Radial assumption: p ∝ x  →  psi* = atan2(x1, x2)
-    # Evader velocity: (w * x1/r, w * x2/r)
-    _r = np.sqrt(_x1_grid**2 + _x2_grid**2)
-    _r_safe = np.where(_r > 0, _r, 1.0)
-    _u = w_val * _x1_grid / _r_safe
-    _v = w_val * _x2_grid / _r_safe
-
-    _ax.quiver(
-        _x1_grid, _x2_grid,
-        _u / w_val, _v / w_val,  # unit vectors, colored by distance
-        _r,
-        cmap='coolwarm',
-        alpha=0.7,
-        pivot='mid',
-        scale=30,
-    )
-
-    # Terminal circle
-    _theta = np.linspace(0, 2 * np.pi, 200)
-    _ax.plot(ell_tilde_val * np.cos(_theta),
-            ell_tilde_val * np.sin(_theta),
-            'k--', linewidth=1, alpha=0.5, label='Terminal circle')
-
-    _ax.plot(0, 0, 'k+', markersize=12, markeredgewidth=2)
-    _ax.set_xlabel(r'$x_1$ (perpendicular)')
-    _ax.set_ylabel(r'$x_2$ (along heading)')
-    _ax.set_aspect('equal')
-    _ax.set_title(
-        rf"Evader's Optimal Heading — Radial Approximation "
-        rf"($w = {w_val:.3f}$, $\tilde{{\ell}} = {ell_tilde_val:.3f}$)"
-    )
-    _ax.legend(loc='lower right', fontsize=9)
-    _ax.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    mo.vstack([
-        _fig,
-        mo.md(
-            r"""
-            **Simplifying assumption:** $\mathbf{p} \propto \mathbf{x}$
-            — the costate is aligned with the position vector. This is
-            **exact on the terminal circle** (by transversality:
-            $\mathbf{p}(T) = \lambda\,\mathbf{x}(T)$), and gives the
-            intuitive picture: the evader runs **radially away** from
-            the pursuer.
-
-            Under this assumption, $\psi^* = \text{atan2}(x_1, x_2)$
-            at every point, and the evader's heading depends only on
-            *where* it is relative to the pursuer — always directly away.
-            The arrows are colored by distance from the origin (pursuer):
-            **red** = far, **blue** = close.
-
-            This is a useful first approximation, but it is only exact
-            at the terminal surface. Away from capture, the costate
-            **rotates** along characteristics (§6 proved
-            $\dot{\mathbf{p}} = \phi J \mathbf{p}$), so the true
-            optimal heading departs from radial. We will see exactly how
-            it departs once we compute the backward trajectories in §8.
-            """
-        )
-    ])
-    return
-
 
 @app.cell
 def lambdify_ode(
@@ -1967,23 +1892,22 @@ def evader_vector_field(ell_tilde_val, mo, np, plt, trajectories, w_val):
             drives **upward** (in the $+x_2$ direction). The evader's
             position relative to the pursuer is $(x_1, x_2)$.
 
-            Earlier we assumed $\mathbf{p} \propto \mathbf{x}$ and got a
-            clean radial "run away" field. Now each arrow shows the
-            **analytic costate** $\nabla V$ at the nearest trajectory
-            point — the exact gradient from the ODE integration, not a
-            numerical approximation. Since $\mathbf{p} = \nabla V$, the
-            optimal heading is
+            The naive guess is that the evader simply runs **radially
+            away** from the pursuer. Each arrow here shows the actual
+            optimal heading $\psi^*$ from the **analytic costate**
+            $\mathbf{p} = \nabla V$ at the nearest trajectory point —
+            the exact gradient from the ODE integration. Since
 
             $$\psi^* = \text{atan2}(p_1, p_2)$$
 
-            — the evader heads in the direction of **steepest increase
+            the evader heads in the direction of **steepest increase
             of capture time**. Using the costate directly from its
-            nearest characteristic avoids any interpolation across
-            characteristic families, ensuring headings are never
-            averaged across the singular surfaces from §7.
+            nearest characteristic avoids interpolation across
+            characteristic families, so headings are never averaged
+            across the singular surfaces from §7.
 
-            **Near the terminal circle** the headings are roughly radial
-            (transversality), confirming the simpler model. Farther out,
+            **Near the terminal circle** the headings are roughly
+            radial — the evader runs directly away. Farther out,
             the evader **runs perpendicular** to the pursuer's heading
             to exploit the turning constraint — a hallmark of the
             Homicidal Chauffeur solution. This is visible in the §1
