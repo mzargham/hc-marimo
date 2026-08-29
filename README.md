@@ -20,7 +20,7 @@ The **Homicidal Chauffeur problem** asks: *Can a fast but clumsy car catch a slo
 - **Singular surfaces** — Merz's taxonomy: dispersal, universal, equivocal, and focal lines
 - **Numerical trajectory simulation** — interactive sliders for evader speed, turn rate, and capture radius
 - **Backward reachable sets** — isochrones computed via method of characteristics
-- **Verification & validation** — 20 automated tests (symbolic + numerical) cross-checking the derivations
+- **Verification & validation** — 30 automated tests (symbolic + numerical) cross-checking the derivations
 
 ## Run Locally
 

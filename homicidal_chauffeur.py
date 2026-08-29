@@ -212,7 +212,7 @@ def chase_demo_static(mo, np, plt):
         parameter values the pursuer **can** capture the evader, but
         the evader's strategy forces costly turning arcs, delaying
         capture as long as possible. (Speed alone does not guarantee
-        capture — see §10 on deadlock.)
+        capture — see §12 on deadlock.)
 
         The rest of this notebook derives the **optimal strategies** for both
         players from first principles, computes the resulting trajectories,
@@ -2694,7 +2694,9 @@ def verification_summary(mo):
 
     ### Symbolic–Numerical Cross-Checks
 
-    The companion test suite (`test_phase2.py`) verifies:
+    The numerical cross-check suite (`test_phase2.py`) verifies (with
+    `test_phase1.py` covering the symbolic derivations and
+    `test_derivation.py` the axiom-explicit lemma chain):
 
     - **Lambdified vs. hand-coded ODE** (T1): The `sp.lambdify`-generated
       function matches an independently coded NumPy implementation at 50
@@ -2730,7 +2732,10 @@ def verification_summary(mo):
     $\tilde{\ell}$ (the pursuer must rely on its turning constraint being
     less of a liability than the evader's speed deficit). This limiting
     behavior is consistent with the known result that for $w \geq 1$,
-    the evader can always escape regardless of $\tilde{\ell}$.
+    the evader can always escape regardless of $\tilde{\ell}$. For the
+    reference geometry used throughout this notebook
+    ($\tilde{\ell} = 0.5$), Isaacs's capture criterion places the escape
+    threshold near $w \approx 0.95$ — exactly the top of the $w$ slider.
 
     ### Symmetry
 

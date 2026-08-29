@@ -32,7 +32,7 @@ reveal are the trailing infrastructure cells — don't advance past the reveal.
 | # | Beat | ~min | Say this |
 |---|------|------|----------|
 | 1 | Title | 0:15 | "This is a marimo notebook. It's also these slides." (plant the seed) |
-| 2 | The ★ puzzle | 2:00 | Tag: fast-clumsy car vs slow-agile runner. Two heuristics (11.3s, 6.2s) — but the *provably optimal* escape survives 12.1s with a sharp kink (★) no intuition predicts. **"Where does the ★ come from? Watch it get computed."** |
+| 2 | The ★ puzzle | 2:00 | Tag: fast-clumsy car vs slow-agile runner. Two heuristics (11.3s, 6.2s) — but the *provably optimal* escape survives 12.1s with a sharp kink (★) no intuition predicts. Say aloud: heuristic panels face a pure-pursuit chaser; 12.1s is optimal-vs-optimal. **"Where does the ★ come from? Watch it get computed."** |
 | 3 | Textbooks | 1:15 | The answer's in Isaacs/Kirk/Bryson & Ho — as static prose. Following ≠ computing. "Let's compute with the derivation instead." |
 | 4a | Symbolize — physical | 1:15 | The physical (lab) picture: 5-DOF state `(x_P,y_P,θ,x_E,y_E)`. P fast but min turning radius; E slow but instantly agile. Scrub the physical sliders. |
 | 4b | Reduce to relative frame | 1:15 | Pin the frame to the pursuer → only relative `(x₁,x₂)` matters. Three different lab configs are the *same* reduced problem (5 DOF → 2 DOF). Whole game depends on just `(w, ℓ̃)`. |

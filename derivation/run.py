@@ -88,7 +88,7 @@ def print_audit(used):
     print("HEADLINE: the smooth derivation is valid ONLY where V* is C^1 (R*).")
     print("It BREAKS on singular surfaces. The dispersal surface (the star in the talk)")
     print("is exactly where the costate p goes multivalued and phi* = -sign(sigma) flips.")
-    print("Everything above is honest away from that seam; the seam is the phenomenon.")
+    print("Everything above is honest away from that boundary; the singular surface is the phenomenon.")
     print("-" * 72)
 
 

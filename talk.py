@@ -123,6 +123,8 @@ def _beat2_hook(mo, np, plt, hook_naive, hook_perp, demo_lab):
             A **fast, clumsy** car chasing a **slow, nimble** runner. Tag, basically.
             Two heuristic escapes do fine. But the *provably optimal* escape makes a
             **sharp mid-chase turn (★)** that no intuition predicts.
+
+            *(Heuristic panels: pure-pursuit chaser. Optimal panel: optimal vs. optimal — the saddle-point benchmark.)*
             """
         ),
     ])
