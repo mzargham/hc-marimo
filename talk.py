@@ -4,12 +4,13 @@ A self-contained marimo notebook that IS the slide deck AND the live demo.
 Presented in slides layout: `uv run marimo run talk.py`.
 
 Structure (see .claude/skills/marimo-talk-notebook):
-  - CONTENT BEATS come first, in file order = slide order (beats 1-10).
-  - All setup / imports / heavy compute / slider DEFINITIONS live at the
-    BOTTOM of the file. They still run (execution is dependency-order, not
-    file-order); their blank slides sit harmlessly after the closing slide.
-  - Sliders are DEFINED in trailing cells and DISPLAYED+CONSUMED in the beat
-    cells, so a slider and its figure share one slide and update live.
+  - CONTENT BEATS in file order = slide order (beats 1-10); every cell is a
+    content slide (no blanks).
+  - Setup / imports / heavy compute fold into the TITLE cell and the numeric
+    pipeline / slider DEFINITIONS fold into the CLOSING cell (execution is
+    dependency-order, not file-order, so downstream cells still get them).
+  - Sliders are DEFINED in the closing cell and DISPLAYED+CONSUMED in the
+    beat cells, so a slider and its figure share one slide and update live.
   - The on-stage symbolic derivation (beats 5) produces the SAME SymPy objects
     that the numerics lambdify and integrate - derivations, not just simulations.
 """
@@ -26,7 +27,85 @@ app = marimo.App(width="medium", layout_file="layouts/talk.slides.json")
 
 
 @app.cell
-def _beat1_title(mo):
+def _beat1_title():
+    # Setup, imports, symbols, fixed parameters, hook data, and the
+    # terminal-condition helper live here (folded in so the deck has no
+    # blank trailing slides); the title markdown below is the output.
+    import marimo as mo
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import sympy as sp
+    from sympy import (
+        symbols, Function, cos, sin, atan2, sqrt, sign, simplify, diff,
+        Matrix, latex, trigsimp, expand_trig, collect, Abs,
+    )
+    from scipy.integrate import solve_ivp, cumulative_trapezoid
+    import sympy as _sp
+    x1, x2 = symbols("x_1 x_2", real=True)
+    p1, p2 = symbols("p_1 p_2", real=True)
+    phi_ctrl = symbols("phi", real=True)
+    psi_ctrl = symbols("psi", real=True)
+    psi_lab = _sp.Symbol(r"\psi_{\mathrm{lab}}", real=True)
+    v_P = symbols("v_P", positive=True)
+    v_E_sym = symbols("v_E", positive=True)
+    w_sym = symbols("w", positive=True)
+    t = symbols("t", real=True)
+    # Canonical operating point for the heavy simulation (dense; run at load).
+    # The beat-4 sliders are decoupled from this so scrubbing stays instant.
+    W_FIXED = 0.45
+    ELL_TILDE_FIXED = 0.5
+    N_TRAJ = 80          # backward characteristics (dense enough for the heat map)
+    T_HORIZON = 12.0
+    # §2 initial condition expressed in body coordinates (answers the ★ at V*≈12.1s).
+    # Beat-2 data. Two pure-pursuit heuristic chases (cheap forward-Euler), plus
+    # the hardcoded composite optimal chase with the ★ heading switch.
+    def simulate_pure_pursuit(p_init, e_init, w, ell, policy, T_max=20.0, dt=0.005):
+        xp, yp, th = p_init
+        xe, ye = e_init
+        n = int(T_max / dt)
+        XP, YP, TH = np.empty(n + 1), np.empty(n + 1), np.empty(n + 1)
+        XE, YE, TT = np.empty(n + 1), np.empty(n + 1), np.empty(n + 1)
+        XP[0], YP[0], TH[0], XE[0], YE[0], TT[0] = xp, yp, th, xe, ye, 0.0
+        cap, last = None, n
+        for k in range(n):
+            bearing = float(np.arctan2(ye - yp, xe - xp))
+            err = (bearing - th + np.pi) % (2 * np.pi) - np.pi
+            phi = float(np.clip(err / dt, -1.0, 1.0))
+            psi = bearing if policy == "run_away" else bearing + 0.5 * np.pi
+            xp += np.cos(th) * dt
+            yp += np.sin(th) * dt
+            th += phi * dt
+            xe += w * np.cos(psi) * dt
+            ye += w * np.sin(psi) * dt
+            XP[k + 1], YP[k + 1], TH[k + 1] = xp, yp, th
+            XE[k + 1], YE[k + 1], TT[k + 1] = xe, ye, (k + 1) * dt
+            if (xe - xp) ** 2 + (ye - yp) ** 2 <= ell * ell:
+                cap, last = (k + 1) * dt, k + 1
+                break
+        sl = slice(0, last + 1)
+        return {"xp": XP[sl], "yp": YP[sl], "xe": XE[sl], "ye": YE[sl],
+                "capture_time": cap if cap is not None else TT[last]}
+
+    _P0 = (6.4691, -1.7816, -3.3856)
+    _E0 = (0.0, 0.0)
+    hook_naive = simulate_pure_pursuit(_P0, _E0, W_FIXED, 0.5, "run_away")
+    hook_perp = simulate_pure_pursuit(_P0, _E0, W_FIXED, 0.5, "perpendicular")
+
+    demo_lab = {
+        "xp": np.array([6.4691, 6.2348, 6.0217, 5.8627, 5.7537, 5.7110, 5.7349, 5.8259, 5.9782, 6.1711, 6.4095, 6.6664, 6.9047, 7.1247, 7.2993, 7.4125, 7.4672, 7.4527, 7.3754, 7.2332, 7.0381, 6.8149, 6.5580, 6.2951, 6.2766, 6.2646, 6.0210, 5.7699, 5.5400, 5.3464, 5.2076, 5.1188, 5.0361, 4.9081, 4.7374, 4.5186, 4.2733, 4.0178, 3.7805, 3.5535, 3.3639, 3.2243, 3.1464, 3.1276, 3.1746, 3.2843, 3.4407, 3.6490, 3.8890, 4.1403]),
+        "yp": np.array([-1.7816, -1.6896, -1.5338, -1.3381, -1.0974, -0.8365, -0.5852, -0.3371, -0.1214, 0.0408, 0.1534, 0.2559, 0.3358, 0.4805, 0.6774, 0.9018, 1.1593, 1.4222, 1.6613, 1.8828, 2.0595, 2.1752, 2.2326, 2.2210, 2.2121, 2.2098, 2.1964, 2.2464, 2.3588, 2.5262, 2.7266, 2.9667, 3.2240, 3.4450, 3.6182, 3.7495, 3.8205, 3.8264, 3.7710, 3.6525, 3.4798, 3.2642, 3.0320, 2.7752, 2.5218, 2.2883, 2.0986, 1.9463, 1.8517, 1.8248]),
+        "xe": np.array([0.0000, 0.1133, 0.2320, 0.3454, 0.4641, 0.5828, 0.6961, 0.8148, 0.9336, 1.0469, 1.1656, 1.2843, 1.3976, 1.5164, 1.6351, 1.7484, 1.8671, 1.9858, 2.0992, 2.2179, 2.3366, 2.4499, 2.5686, 2.6874, 2.6928, 2.6963, 2.7672, 2.8416, 2.9161, 2.9905, 3.0614, 3.1359, 3.2103, 3.2848, 3.3557, 3.4301, 3.5046, 3.5790, 3.6499, 3.7243, 3.7988, 3.8732, 3.9441, 4.0186, 4.0930, 4.1675, 4.2384, 4.3128, 4.3873, 4.4617]),
+        "ye": np.array([0.0000, 0.0042, 0.0086, 0.0128, 0.0172, 0.0216, 0.0258, 0.0302, 0.0346, 0.0388, 0.0432, 0.0476, 0.0518, 0.0562, 0.0605, 0.0647, 0.0691, 0.0735, 0.0777, 0.0821, 0.0865, 0.0907, 0.0951, 0.0995, 0.0997, 0.1039, 0.1884, 0.2772, 0.3659, 0.4546, 0.5391, 0.6278, 0.7165, 0.8052, 0.8897, 0.9785, 1.0672, 1.1559, 1.2404, 1.3291, 1.4178, 1.5066, 1.5911, 1.6798, 1.7685, 1.8572, 1.9417, 2.0304, 2.1192, 2.2079]),
+        "switch_idx": 24,
+        "opt_time": 12.1,
+    }
+    # Usable-part transversality: seed states on the capture circle for backward shooting.
+    def compute_terminal_conditions(alpha_arr, w_val, ell_tilde_val):
+        x1_T = ell_tilde_val * np.cos(alpha_arr)
+        x2_T = ell_tilde_val * np.sin(alpha_arr)
+        lam = -1.0 / (ell_tilde_val * (w_val - np.sin(alpha_arr)))
+        return np.column_stack([x1_T, x2_T, lam * x1_T, lam * x2_T])
+
     mo.md(
         r"""
         # Derivations, Not Just Simulations
@@ -39,7 +118,13 @@ def _beat1_title(mo):
         SciPy 2026
         """
     )
-    return
+    return (mo, Abs, Function, Matrix, atan2, collect, cos,
+            cumulative_trapezoid, diff, expand_trig, latex, np, plt,
+            sign, simplify, sin, solve_ivp, sp, sqrt, symbols,
+            trigsimp, p1, p2, phi_ctrl, psi_ctrl, psi_lab, t,
+            v_E_sym, v_P, w_sym, x1, x2, ELL_TILDE_FIXED, N_TRAJ,
+            T_HORIZON, W_FIXED, demo_lab, hook_naive, hook_perp,
+            compute_terminal_conditions)
 
 
 @app.cell
@@ -895,134 +980,14 @@ def _payoff2_chain(mo):
 
 
 @app.cell
-def _beat10_reveal(mo):
-    # THE REVEAL (LAST slide) - name the six-stage pattern as earned insight; the talk ends
-    # on Validate, the human step, where the speaker claims the assumptions were
-    # contextually appropriate.
-    mo.md(
-        r"""
-        ## What you just watched was a pattern
-
-        | | |
-        |---|---|
-        | **Motivate** | the ★ puzzle: physical intuition before formalism |
-        | **Symbolize** | state, parameters, dynamics as SymPy objects |
-        | **Derive** | differentiation + trig-simplification → optimal play |
-        | **Lambdify** | `sp.lambdify`: symbols to fast numerics |
-        | **Simulate** | `solve_ivp` on the derived dynamics |
-        | **Validate** | is this model appropriate for the problem at hand? |
-
-        I've been playing with this in this notebook:
-
-        `github.com/mzargham/hc-marimo` · live: `mzargham.github.io/hc-marimo` · paper: PR 1206 on scipy-conference/scipy_proceedings
-        """
-    )
-    return
-
-
-# ===========================================================================
-# INFRASTRUCTURE  (bottom of file = trailing blank slides; run in dep order)
-# ===========================================================================
-
-
-@app.cell
-def _setup_marimo():
-    import marimo as mo
-    return (mo,)
-
-
-@app.cell
-def _imports():
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import sympy as sp
-    from sympy import (
-        symbols, Function, cos, sin, atan2, sqrt, sign, simplify, diff,
-        Matrix, latex, trigsimp, expand_trig, collect, Abs,
-    )
-    from scipy.integrate import solve_ivp, cumulative_trapezoid
-    return (Abs, Function, Matrix, atan2, collect, cos, cumulative_trapezoid,
-            diff, expand_trig, latex, np, plt, sign, simplify, sin, solve_ivp,
-            sp, sqrt, symbols, trigsimp)
-
-
-@app.cell
-def _symbols(symbols):
-    import sympy as _sp
-    x1, x2 = symbols("x_1 x_2", real=True)
-    p1, p2 = symbols("p_1 p_2", real=True)
-    phi_ctrl = symbols("phi", real=True)
-    psi_ctrl = symbols("psi", real=True)
-    psi_lab = _sp.Symbol(r"\psi_{\mathrm{lab}}", real=True)
-    v_P = symbols("v_P", positive=True)
-    v_E_sym = symbols("v_E", positive=True)
-    w_sym = symbols("w", positive=True)
-    t = symbols("t", real=True)
-    return p1, p2, phi_ctrl, psi_ctrl, psi_lab, t, v_E_sym, v_P, w_sym, x1, x2
-
-
-@app.cell
-def _fixed_params():
-    # Canonical operating point for the heavy simulation (dense; run at load).
-    # The beat-4 sliders are decoupled from this so scrubbing stays instant.
-    W_FIXED = 0.45
-    ELL_TILDE_FIXED = 0.5
-    N_TRAJ = 80          # backward characteristics (dense enough for the heat map)
-    T_HORIZON = 12.0
-    # §2 initial condition expressed in body coordinates (answers the ★ at V*≈12.1s).
-    return ELL_TILDE_FIXED, N_TRAJ, T_HORIZON, W_FIXED
-
-
-@app.cell
-def _hook_data(np, W_FIXED):
-    # Beat-2 data. Two pure-pursuit heuristic chases (cheap forward-Euler), plus
-    # the hardcoded composite optimal chase with the ★ heading switch.
-    def simulate_pure_pursuit(p_init, e_init, w, ell, policy, T_max=20.0, dt=0.005):
-        xp, yp, th = p_init
-        xe, ye = e_init
-        n = int(T_max / dt)
-        XP, YP, TH = np.empty(n + 1), np.empty(n + 1), np.empty(n + 1)
-        XE, YE, TT = np.empty(n + 1), np.empty(n + 1), np.empty(n + 1)
-        XP[0], YP[0], TH[0], XE[0], YE[0], TT[0] = xp, yp, th, xe, ye, 0.0
-        cap, last = None, n
-        for k in range(n):
-            bearing = float(np.arctan2(ye - yp, xe - xp))
-            err = (bearing - th + np.pi) % (2 * np.pi) - np.pi
-            phi = float(np.clip(err / dt, -1.0, 1.0))
-            psi = bearing if policy == "run_away" else bearing + 0.5 * np.pi
-            xp += np.cos(th) * dt
-            yp += np.sin(th) * dt
-            th += phi * dt
-            xe += w * np.cos(psi) * dt
-            ye += w * np.sin(psi) * dt
-            XP[k + 1], YP[k + 1], TH[k + 1] = xp, yp, th
-            XE[k + 1], YE[k + 1], TT[k + 1] = xe, ye, (k + 1) * dt
-            if (xe - xp) ** 2 + (ye - yp) ** 2 <= ell * ell:
-                cap, last = (k + 1) * dt, k + 1
-                break
-        sl = slice(0, last + 1)
-        return {"xp": XP[sl], "yp": YP[sl], "xe": XE[sl], "ye": YE[sl],
-                "capture_time": cap if cap is not None else TT[last]}
-
-    _P0 = (6.4691, -1.7816, -3.3856)
-    _E0 = (0.0, 0.0)
-    hook_naive = simulate_pure_pursuit(_P0, _E0, W_FIXED, 0.5, "run_away")
-    hook_perp = simulate_pure_pursuit(_P0, _E0, W_FIXED, 0.5, "perpendicular")
-
-    demo_lab = {
-        "xp": np.array([6.4691, 6.2348, 6.0217, 5.8627, 5.7537, 5.7110, 5.7349, 5.8259, 5.9782, 6.1711, 6.4095, 6.6664, 6.9047, 7.1247, 7.2993, 7.4125, 7.4672, 7.4527, 7.3754, 7.2332, 7.0381, 6.8149, 6.5580, 6.2951, 6.2766, 6.2646, 6.0210, 5.7699, 5.5400, 5.3464, 5.2076, 5.1188, 5.0361, 4.9081, 4.7374, 4.5186, 4.2733, 4.0178, 3.7805, 3.5535, 3.3639, 3.2243, 3.1464, 3.1276, 3.1746, 3.2843, 3.4407, 3.6490, 3.8890, 4.1403]),
-        "yp": np.array([-1.7816, -1.6896, -1.5338, -1.3381, -1.0974, -0.8365, -0.5852, -0.3371, -0.1214, 0.0408, 0.1534, 0.2559, 0.3358, 0.4805, 0.6774, 0.9018, 1.1593, 1.4222, 1.6613, 1.8828, 2.0595, 2.1752, 2.2326, 2.2210, 2.2121, 2.2098, 2.1964, 2.2464, 2.3588, 2.5262, 2.7266, 2.9667, 3.2240, 3.4450, 3.6182, 3.7495, 3.8205, 3.8264, 3.7710, 3.6525, 3.4798, 3.2642, 3.0320, 2.7752, 2.5218, 2.2883, 2.0986, 1.9463, 1.8517, 1.8248]),
-        "xe": np.array([0.0000, 0.1133, 0.2320, 0.3454, 0.4641, 0.5828, 0.6961, 0.8148, 0.9336, 1.0469, 1.1656, 1.2843, 1.3976, 1.5164, 1.6351, 1.7484, 1.8671, 1.9858, 2.0992, 2.2179, 2.3366, 2.4499, 2.5686, 2.6874, 2.6928, 2.6963, 2.7672, 2.8416, 2.9161, 2.9905, 3.0614, 3.1359, 3.2103, 3.2848, 3.3557, 3.4301, 3.5046, 3.5790, 3.6499, 3.7243, 3.7988, 3.8732, 3.9441, 4.0186, 4.0930, 4.1675, 4.2384, 4.3128, 4.3873, 4.4617]),
-        "ye": np.array([0.0000, 0.0042, 0.0086, 0.0128, 0.0172, 0.0216, 0.0258, 0.0302, 0.0346, 0.0388, 0.0432, 0.0476, 0.0518, 0.0562, 0.0605, 0.0647, 0.0691, 0.0735, 0.0777, 0.0821, 0.0865, 0.0907, 0.0951, 0.0995, 0.0997, 0.1039, 0.1884, 0.2772, 0.3659, 0.4546, 0.5391, 0.6278, 0.7165, 0.8052, 0.8897, 0.9785, 1.0672, 1.1559, 1.2404, 1.3291, 1.4178, 1.5066, 1.5911, 1.6798, 1.7685, 1.8572, 1.9417, 2.0304, 2.1192, 2.2079]),
-        "switch_idx": 24,
-        "opt_time": 12.1,
-    }
-    return demo_lab, hook_naive, hook_perp
-
-
-@app.cell
-def _rhs(sp, sign, f1, f2, sigma_expr, psi_star_expr, p1_dot_expr, p2_dot_expr,
-         x1, x2, p1, p2, phi_ctrl, psi_ctrl, w_sym):
+def _beat10_reveal(mo, np, sp, sign, solve_ivp, cumulative_trapezoid,
+                   compute_terminal_conditions, W_FIXED, ELL_TILDE_FIXED,
+                   N_TRAJ, T_HORIZON, x1, x2, p1, p2, phi_ctrl, psi_ctrl,
+                   w_sym, f1, f2, sigma_expr, psi_star_expr, p1_dot_expr,
+                   p2_dot_expr):
+    # Numeric RHS, backward characteristics, physical lift, and the
+    # sliders live here (folded in so the deck has no blank trailing
+    # slides); the closing markdown below is the output.
     # Build the numeric RHS from the SAME symbolic objects derived on stage.
     _subs = [(phi_ctrl, -sign(sigma_expr)), (psi_ctrl, psi_star_expr)]
     _rhs_x1 = f1.subs(_subs)
@@ -1039,23 +1004,6 @@ def _rhs(sp, sign, f1, f2, sigma_expr, psi_star_expr, p1_dot_expr, p2_dot_expr,
     def rhs_backward(tt, state, w_val):
         return [-v for v in rhs_forward(tt, state, w_val)]
 
-    return (rhs_backward,)
-
-
-@app.cell
-def _terminal(np):
-    # Usable-part transversality: seed states on the capture circle for backward shooting.
-    def compute_terminal_conditions(alpha_arr, w_val, ell_tilde_val):
-        x1_T = ell_tilde_val * np.cos(alpha_arr)
-        x2_T = ell_tilde_val * np.sin(alpha_arr)
-        lam = -1.0 / (ell_tilde_val * (w_val - np.sin(alpha_arr)))
-        return np.column_stack([x1_T, x2_T, lam * x1_T, lam * x2_T])
-    return (compute_terminal_conditions,)
-
-
-@app.cell
-def _backward_trajectories(np, solve_ivp, compute_terminal_conditions, rhs_backward,
-                           W_FIXED, ELL_TILDE_FIXED, N_TRAJ, T_HORIZON):
     # Dense backward characteristics (the heavy compute; runs once at load).
     _amin = np.arcsin(min(W_FIXED, 0.999))
     _amax = np.pi - _amin
@@ -1066,12 +1014,6 @@ def _backward_trajectories(np, solve_ivp, compute_terminal_conditions, rhs_backw
         trajectories.append(solve_ivp(
             rhs_backward, [0, T_HORIZON], _term[_i], args=(W_FIXED,),
             method="RK45", max_step=0.1, dense_output=True, rtol=1e-8, atol=1e-10))
-    return (trajectories,)
-
-
-@app.cell
-def _physical_lift(np, solve_ivp, cumulative_trapezoid, trajectories,
-                   compute_terminal_conditions, rhs_backward, W_FIXED, ELL_TILDE_FIXED):
     # Lift each reduced backward characteristic to a forward-time lab-frame chase,
     # and stitch the composite (two crossing characteristics → the ★ direction change).
     _N = 300
@@ -1161,11 +1103,6 @@ def _physical_lift(np, solve_ivp, cumulative_trapezoid, trajectories,
     physical_trajs = _phys
     composite_idx = len(_phys) - 1
     T_max_phys = max(_p["t"][-1] for _p in _phys)
-    return T_max_phys, composite_idx, physical_trajs
-
-
-@app.cell
-def _controls(mo, physical_trajs, T_max_phys, composite_idx):
     # All display-consumed sliders. Defined here (trailing, no output → blank slide);
     # DISPLAYED and read in the beat cells so they update their figures live.
     v_E_slider = mo.ui.slider(0.05, 0.95, 0.05, value=0.45, label=r"$v_E$ (evader speed)")
@@ -1175,7 +1112,32 @@ def _controls(mo, physical_trajs, T_max_phys, composite_idx):
                                      label="trajectory (last = the ★ chase)")
     t_forward_slider = mo.ui.slider(0.0, T_max_phys, 0.1, value=T_max_phys,
                                     label="forward time $t$")
-    return ell_slider, omega_slider, t_forward_slider, traj_index_slider, v_E_slider
+
+    # THE REVEAL (LAST slide) - name the six-stage pattern as earned insight; the talk ends
+    # on Validate, the human step, where the speaker claims the assumptions were
+    # contextually appropriate.
+    mo.md(
+        r"""
+        ## What you just watched was a pattern
+
+        | | |
+        |---|---|
+        | **Motivate** | the ★ puzzle: physical intuition before formalism |
+        | **Symbolize** | state, parameters, dynamics as SymPy objects |
+        | **Derive** | differentiation + trig-simplification → optimal play |
+        | **Lambdify** | `sp.lambdify`: symbols to fast numerics |
+        | **Simulate** | `solve_ivp` on the derived dynamics |
+        | **Validate** | is this model appropriate for the problem at hand? |
+
+        I've been playing with this in this notebook:
+
+        `github.com/mzargham/hc-marimo` · live: `mzargham.github.io/hc-marimo` · paper: PR 1206 on scipy-conference/scipy_proceedings
+        """
+    )
+    return (T_max_phys, composite_idx, physical_trajs, ell_slider,
+            omega_slider, rhs_backward, t_forward_slider,
+            traj_index_slider, trajectories, v_E_slider)
+
 
 
 if __name__ == "__main__":

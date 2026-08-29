@@ -60,12 +60,13 @@ keys advance slides. Because slides = file order, **reordering a beat = moving i
 `@app.cell` block in the file** (keeping dependencies earlier than their uses).
 
 **One cell = one slide, strictly.** marimo cannot group cells onto a slide. A cell
-with no visual output still becomes a (blank) slide. So: **all setup / import /
-heavy-compute / slider-definition cells go at the BOTTOM of the file, after the
-last content beat.** They still run (execution is dependency-order, not file-order),
-and their blank slides sit *after* your closing slide where you simply never
-advance. Never interleave an output-less cell between two content beats — that
-inserts a blank slide mid-deck.
+with no visual output still becomes a (blank) slide. So: **fold setup / import /
+heavy-compute / slider-definition code INTO content cells** — upstream code into
+the title cell, the numeric pipeline and slider definitions into the closing cell,
+with the cell's markdown as its final expression. Execution is dependency-order,
+not file-order, so earlier beats still receive those names, and the deck contains
+no blank slides at all. Never interleave an output-less cell between two content
+beats — that inserts a blank slide mid-deck.
 
 ### Live slider + reactive figure on ONE slide (the key idiom)
 
@@ -75,13 +76,12 @@ and reads `slider.value` will NOT update on interaction — fatal for "scrub and
 if you do it naively. The fix that keeps the control and its figure on the *same*
 reveal.js slide:
 
-- **Define the slider in a trailing (bottom-of-file) cell**, output nothing:
+- **Define the slider away from the cell that reads it** — in this deck, inside
+  the closing (reveal) cell, whose output is its own markdown:
   ```python
-  @app.cell
-  def _controls(mo):
-      traj_slider = mo.ui.slider(0, 40, value=40, label="trajectory")
-      t_slider = mo.ui.slider(0.0, 12.0, 0.1, value=12.0, label="time")
-      return traj_slider, t_slider          # NOTE: no display → blank trailing slide
+  # inside the closing content cell, before its final mo.md(...) expression
+  traj_slider = mo.ui.slider(0, 40, value=40, label="trajectory")
+  t_slider = mo.ui.slider(0.0, 12.0, 0.1, value=12.0, label="time")
   ```
 - **In the beat cell, display AND consume it** (the beat cell references `.value`
   but does NOT define the slider, so it re-runs on interaction):
