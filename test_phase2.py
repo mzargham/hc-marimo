@@ -706,6 +706,26 @@ def test_T16_physical_capture_distance():
     print(f"T16 PASS: capture distance = ell_tilde in physical coordinates")
 
 
+# ---- T17: §12 Applications subsection names the paper's figure exports ----
+
+def test_T17_applications_subsection():
+    """§12 names the three application instances and the three figure names
+    the SciPy Proceedings paper promises ship with this notebook."""
+    with open("homicidal_chauffeur.py") as f:
+        src = f.read()
+
+    s12 = src.index("## §12")
+    refs = src.index("### References", s12)
+    apps = src.index("### Applications", s12)
+    assert s12 < apps < refs, "Applications block must sit inside §12 before References"
+
+    block = src[apps:refs]
+    for phrase in ("collision avoidance", "swarm defense", "Hardware-in-the-loop"):
+        assert phrase in block, f"missing application phrase: {phrase}"
+    for name in ("optimal_vector_field", "trajectory_fan", "conservation_diagnostics"):
+        assert src.count(name) >= 2, f"figure name {name} should appear in §12 and at its host cell"
+
+
 # ---- Run all tests ----
 if __name__ == "__main__":
     print("=" * 60)
@@ -727,6 +747,7 @@ if __name__ == "__main__":
     test_T14_usable_part_monotone()
     test_T15_physical_lift_distance()
     test_T16_physical_capture_distance()
+    test_T17_applications_subsection()
     print("=" * 60)
     print("ALL TESTS PASSED")
     print("=" * 60)

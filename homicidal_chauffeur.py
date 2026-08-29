@@ -50,7 +50,9 @@ def title(mo):
     *A [marimo](https://marimo.io) notebook exploring Rufus Isaacs'
     foundational pursuit-evasion problem through symbolic computation
     and numerical simulation.*
-    [[source code](https://github.com/mzargham/hc-marimo)]
+    [[source code](https://github.com/mzargham/hc-marimo)] ·
+    [[paper](https://github.com/scipy-conference/scipy_proceedings/pull/1206)]
+    <!-- TODO: replace the paper link with the DOI at publication -->
 
     The mathematics is derived symbolically with
     [SymPy](https://www.sympy.org), then brought to life numerically
@@ -1343,6 +1345,9 @@ def vector_field_plot(ell_tilde_val, mo, np, plt, w_val):
             **blue** = slow. The flow generally pushes upward (the pursuer
             advances along $x_2$) with a rotational component from the
             turning constraint.
+
+            *This figure ships in the SciPy Proceedings paper's codebase as
+            `plots.optimal_vector_field`; see §12 Applications.*
             """
         )
     ])
@@ -1763,6 +1768,9 @@ def trajectory_plot(ell_tilde_val, mo, np, plt, trajectories, w_val):
             pursuer's **rotating body frame** — the turning radius constraint
             applies to the pursuer's lab-frame path, not to these relative
             trajectories.
+
+            *This figure ships in the SciPy Proceedings paper's codebase as
+            `plots.trajectory_fan`; see §12 Applications.*
             """
         )
     ])
@@ -2660,6 +2668,9 @@ def conservation_plots(mo, np, plt, trajectories, w_val):
             well-understood numerical artifacts and are many orders of
             magnitude below any level that would affect the qualitative
             structure of the solution.
+
+            *These diagnostics ship in the SciPy Proceedings paper's codebase
+            as `plots.conservation_diagnostics`; see §12 Applications.*
             """
         )
     ])
@@ -2852,10 +2863,42 @@ def extensions(mo):
     The HC game's 2D reduced state space makes it amenable to both
     characteristic-based and grid-based methods.
 
+    ### Applications: three named instances
+
+    The SciPy Proceedings paper built from this notebook names three
+    application instances of the machinery demonstrated here:
+
+    1. **Autonomous-vehicle collision avoidance** via the singular-surface
+       taxonomy (§7): dispersal and equivocal surfaces classify the
+       decision boundaries a planner faces — "swerve left vs. right" is a
+       dispersal-surface choice — and the bang-bang switching structure is
+       live in §7's vector-field figure (in the paper's codebase:
+       `plots.optimal_vector_field`). See Bernhard (1977), Merz (1971).
+
+    2. **Multi-pursuer differential games for UAV swarm defense**: coalition
+       value functions extend Isaacs's single-pursuer framework (see
+       *Multiplayer Pursuit-Evasion* above); the per-pursuer primitive they
+       compose is §8's family of optimal characteristics (in the paper's
+       codebase: `plots.trajectory_fan`). See Kumkov, Le Ménec & Patsko
+       (2017).
+
+    3. **Hardware-in-the-loop testing of pursuit controllers**: the forward
+       physical-coordinate chase (§9, built from the modern restatement of
+       Coates & Pachter 2019) is the characteristic-integration backbone a
+       simulator drives, and §11's conservation diagnostics (in the paper's
+       codebase: `plots.conservation_diagnostics`) are the regression
+       invariants ($H^* \approx 0$, $\|\mathbf{p}\|^2$ drift at the noise
+       floor) that certify the simulated plant.
+
+    ---
+
     ---
 
     ### References
 
+    - M. Zargham, *Derivations, Not Just Simulations: Teaching Applied
+      Mathematics with Scientific Python*, SciPy Proceedings (in review,
+      2026) — the paper built from this notebook
     - R. Isaacs, *Games of Pursuit*, RAND Corporation Paper P-257 (1951)
     - R. Isaacs, *Differential Games: A Mathematical Theory with Applications
       to Warfare and Pursuit, Control and Optimization*, John Wiley & Sons
