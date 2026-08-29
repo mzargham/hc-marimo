@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Homicidal Chauffeur: Derivations, Not Just Simulations</title>
+<meta name="description" content="Isaacs's homicidal chauffeur differential game, derived symbolically and simulated interactively — notebook, paper, and talk by Michael Zargham.">
+<style>
+  :root {
+    --bg: #faf9f6;
+    --fg: #1c1c1c;
+    --muted: #5a5a5a;
+    --card-bg: #ffffff;
+    --card-border: #e2ddd4;
+    --accent: #1f5aa8;
+    --accent-soft: #e4edf8;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191817;
+      --fg: #e8e6e1;
+      --muted: #a5a19a;
+      --card-bg: #221f1e;
+      --card-border: #3a3532;
+      --accent: #85b4ea;
+      --accent-soft: #1f2a3a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 17px/1.6 Georgia, "Times New Roman", serif;
+  }
+  main {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3rem 1.25rem 4rem;
+  }
+  header h1 {
+    font-size: 2rem;
+    line-height: 1.25;
+    margin: 0 0 0.25rem;
+  }
+  header .subtitle {
+    font-size: 1.15rem;
+    color: var(--muted);
+    margin: 0 0 0.25rem;
+  }
+  header .byline {
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin: 0 0 2rem;
+  }
+  p { margin: 0 0 1rem; }
+  a { color: var(--accent); }
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 2.25rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (max-width: 40rem) {
+    .cards { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .card h2 {
+    font-size: 1.1rem;
+    margin: 0 0 0.5rem;
+  }
+  .card p {
+    font-size: 0.93rem;
+    color: var(--muted);
+    margin: 0 0 0.9rem;
+    flex: 1;
+  }
+  .card .go {
+    display: inline-block;
+    font-size: 0.9rem;
+    font-family: system-ui, sans-serif;
+    text-decoration: none;
+    background: var(--accent-soft);
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    align-self: start;
+  }
+  .card .soon {
+    display: inline-block;
+    font-size: 0.9rem;
+    font-family: system-ui, sans-serif;
+    color: var(--muted);
+    border: 1px dashed var(--card-border);
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    align-self: start;
+  }
+  .footnote {
+    margin: 1rem 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--card-border);
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>The Homicidal Chauffeur</h1>
+    <p class="subtitle">Derivations, not just simulations: teaching applied mathematics with scientific Python</p>
+    <p class="byline">Michael Zargham · SciPy 2026</p>
+  </header>
+
+  <p>
+    Can a fast car with a bounded turning radius always catch a slower but
+    perfectly agile pedestrian? Rufus Isaacs posed this pursuit-evasion problem
+    at RAND in 1951, and it became the founding example of differential game
+    theory. This project works the problem end to end in open scientific
+    Python: every governing equation is <em>derived</em> symbolically with
+    SymPy, then lambdified into the NumPy/SciPy code that simulates and plots
+    it — so the chain from mathematical claim to rendered figure is executable
+    and inspectable at every link, and an automated test suite cross-checks the
+    derivations against the numerics.
+  </p>
+  <p>
+    The artifacts here trace the arc of the work. The interactive notebook
+    came first — an open-ended exploration of the idea — and became the basis
+    for a SciPy 2026 talk submission. When the talk was accepted, the slides
+    were built from the same notebook. And because the work aligns so directly
+    with the SciPy Proceedings' mission of executable, reproducible,
+    version-controlled research artifacts, it also grew into an executable
+    paper developed to the proceedings guidelines. Start wherever suits you.
+  </p>
+
+  <ul class="cards">
+    <li class="card">
+      <h2>Interactive notebook</h2>
+      <p>
+        The original, complete treatment: twelve sections from kinematics
+        through optimal strategies and the singular-surface taxonomy to
+        deadlock, with SymPy derivations cross-checked by 61 automated tests.
+        A marimo notebook that runs entirely in your browser — sliders and
+        all.
+      </p>
+      <a class="go" href="notebook/">Open the notebook →</a>
+    </li>
+    <li class="card">
+      <h2>Talk slides</h2>
+      <p>
+        The SciPy 2026 talk as an interactive deck: seventeen slides that open
+        with a chase no intuition predicts, then reveal the derivation
+        machinery behind it. Live sliders included — the figures respond as
+        you present.
+      </p>
+      <a class="go" href="slides/">Open the slides →</a>
+    </li>
+    <li class="card">
+      <h2>Paper</h2>
+      <p>
+        <em>Derivations, Not Just Simulations: Teaching Applied Mathematics
+        with Scientific Python</em> — the SciPy Proceedings paper built from
+        this notebook, focused on the executable derivation pipeline and the
+        verification culture around it. Currently in review.
+      </p>
+      <!-- TODO: replace with the official proceedings link/DOI at publication -->
+      <a class="go" href="https://github.com/scipy-conference/scipy_proceedings/pull/1206">Read the paper (PR #1206) →</a><sup>*</sup>
+    </li>
+    <li class="card">
+      <h2>Talk video</h2>
+      <p>
+        The recording of the SciPy 2026 talk. Conference recordings are
+        published after the season wraps; the link will appear here when it
+        drops.
+      </p>
+      <!-- TODO: add the link when the SciPy 2026 recording is published -->
+      <span class="soon">Coming soon</span>
+    </li>
+  </ul>
+
+  <p class="footnote">
+    <sup>*</sup> The paper link currently points to the submitted pull request;
+    it will migrate to the canonical SciPy Proceedings page when it goes live.
+  </p>
+
+  <footer>
+    Source for everything on this page:
+    <a href="https://github.com/mzargham/hc-marimo">github.com/mzargham/hc-marimo</a>
+  </footer>
+</main>
+</body>
+</html>

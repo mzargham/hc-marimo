@@ -10,12 +10,12 @@ notebook in slides layout.
 uv run marimo run talk.py          # PRESENT — start this BEFORE going on stage; let it
                                    # finish the dense backward-integration load (~few s)
 ```
-Arrow keys advance slides. The deck is **10 content slides**; blank slides after the
-reveal are the trailing infrastructure cells — don't advance past the reveal.
+Arrow keys advance slides. Every cell is a content slide (17 slides across the 10
+beats); the deck ends at the reveal — no blank slides after it.
 
-**Backup:** a WASM build (`uv run marimo export html-wasm talk.py -o _site/index.html
---mode run`) open in a second tab, plus the full companion notebook
-`homicidal_chauffeur.py` (hosted at mzargham.github.io/hc-marimo) linked on the reveal.
+**Backup:** the deployed deck at mzargham.github.io/hc-marimo/slides/ open in a second
+tab, plus the full companion notebook `homicidal_chauffeur.py` (hosted at
+mzargham.github.io/hc-marimo/notebook/) linked on the reveal.
 
 ## What's live vs. pre-run
 

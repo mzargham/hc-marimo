@@ -2,9 +2,10 @@
 
 **Symbolic Derivation & Interactive Simulation with SymPy**
 
-[**Live demo**](https://mzargham.github.io/hc-marimo/) · [**Talk slides**](https://mzargham.github.io/hc-marimo/slides/) · [**Paper** (SciPy Proceedings, in review)](https://github.com/scipy-conference/scipy_proceedings/pull/1206)
+[**Overview**](https://mzargham.github.io/hc-marimo/) · [**Live notebook**](https://mzargham.github.io/hc-marimo/notebook/) · [**Talk slides**](https://mzargham.github.io/hc-marimo/slides/) · [**Paper** (SciPy Proceedings, in review)](https://github.com/scipy-conference/scipy_proceedings/pull/1206)
 
 <!-- TODO: replace the paper link with the DOI at publication -->
+<!-- TODO: add the talk video link to the overview page and here when the SciPy 2026 recording is published -->
 
 ---
 
@@ -22,7 +23,7 @@ The **Homicidal Chauffeur problem** asks: *Can a fast but clumsy car catch a slo
 - **Singular surfaces** — Merz's taxonomy: dispersal, universal, equivocal, and focal lines
 - **Numerical trajectory simulation** — interactive sliders for evader speed, turn rate, and capture radius
 - **Backward reachable sets** — isochrones computed via method of characteristics
-- **Verification & validation** — 30 automated tests (symbolic + numerical) cross-checking the derivations
+- **Verification & validation** — 61 automated tests (symbolic + numerical) cross-checking the derivations
 
 ## Run Locally
 
