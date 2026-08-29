@@ -146,11 +146,12 @@ def _beat3_textbooks(mo):
                 return (f'<img src="data:image/{_mime};base64,{_data}" '
                         'style="max-height:460px;border-radius:4px;'
                         'box-shadow:0 6px 24px rgba(0,0,0,0.4);">')
-        return ('<div style="width:300px;height:430px;display:flex;'
-                'align-items:center;justify-content:center;border:2px dashed #999;'
-                'color:#999;text-align:center;border-radius:4px;">'
-                'Isaacs, <i>Differential&nbsp;Games</i><br>'
-                '<small>drop cover at<br>assets/isaacs_differential_games.jpg</small></div>')
+        # Deployed (WASM) fallback: the browser filesystem has no assets/,
+        # but the deploy workflow serves them next to the page over HTTP.
+        return ('<img src="assets/isaacs_differential_games.jpg" '
+                'alt="Isaacs, Differential Games (1965)" '
+                'style="max-height:460px;border-radius:4px;'
+                'box-shadow:0 6px 24px rgba(0,0,0,0.4);">')
 
     mo.hstack(
         [

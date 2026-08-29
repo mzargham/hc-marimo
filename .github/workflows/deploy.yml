@@ -28,6 +28,15 @@ jobs:
             -o _site/index.html \
             --mode run
 
+      - name: Export talk slides
+        run: |
+          uv run marimo export html-wasm \
+            talk.py \
+            -o _site/slides/index.html \
+            --mode run
+          mkdir -p _site/slides/assets
+          cp assets/isaacs_differential_games.jpg _site/slides/assets/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
