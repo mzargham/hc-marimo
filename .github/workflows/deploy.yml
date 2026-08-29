@@ -24,7 +24,7 @@ jobs:
       - name: Landing page
         run: |
           mkdir -p _site
-          cp site/index.html _site/index.html
+          cp site/index.html site/chase.gif _site/
 
       - name: Export notebook
         run: |
