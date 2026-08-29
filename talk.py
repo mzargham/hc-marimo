@@ -913,7 +913,7 @@ def _beat10_reveal(mo):
 
         I've been playing with this in this notebook:
 
-        `github.com/mzargham/hc-marimo` · live: `mzargham.github.io/hc-marimo`
+        `github.com/mzargham/hc-marimo` · live: `mzargham.github.io/hc-marimo` · paper: PR 1206 on scipy-conference/scipy_proceedings
         """
     )
     return
