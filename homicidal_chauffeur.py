@@ -2076,7 +2076,8 @@ def physical_trajectories(
       4. Flip to forward time and shift so evader starts at (0,0)
 
     Also builds one composite trajectory from two crossing characteristics
-    (alpha_A=40deg, alpha_B=95deg) matching the static demo in section 1.
+    (~40deg/95deg at the default w=0.45, adapting with the slider) matching
+    the static demo in section 1.
     """
     from scipy.integrate import cumulative_trapezoid
 
@@ -2133,10 +2134,15 @@ def physical_trajectories(
 
     # --- Composite trajectory matching the static demo (§1) ---
     # Two characteristics that cross at a dispersal surface, producing
-    # a ~48deg evader direction change.
-    _alpha_A = np.radians(40.0)
-    _alpha_B = np.radians(95.0)
-    _T_bk = 15.0
+    # a ~48deg evader direction change. Pick the angles as calibrated
+    # fractions of the usable arc so they adapt to the current speed
+    # ratio while staying safely inside it: percentiles 0.105 / 0.540
+    # reproduce the original 40deg/95deg at the default w=0.45.
+    _arc_min = np.arcsin(min(w_val, 0.999))
+    _arc_width = np.pi - 2 * _arc_min
+    _alpha_A = _arc_min + 0.105 * _arc_width  # ~40deg at default w=0.45
+    _alpha_B = _arc_min + 0.540 * _arc_width  # ~95deg at default w=0.45
+    _T_bk = max(trajectories[0].t[-1] * 1.5, 15.0)
     _sols_ab = {}
     for _label, _alpha in [('A', _alpha_A), ('B', _alpha_B)]:
         _ic = compute_terminal_conditions(
