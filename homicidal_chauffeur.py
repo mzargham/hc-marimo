@@ -2903,7 +2903,7 @@ def extensions(mo):
     ### References
 
     - M. Zargham, *Derivations, Not Just Simulations: Teaching Applied
-      Mathematics with Scientific Python*, SciPy Proceedings (in review,
+      Mathematics with Scientific Python*, SciPy Proceedings (accepted,
       2026) — the paper built from this notebook
     - R. Isaacs, *Games of Pursuit*, RAND Corporation Paper P-257 (1951)
     - R. Isaacs, *Differential Games: A Mathematical Theory with Applications

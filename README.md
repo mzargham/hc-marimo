@@ -2,7 +2,7 @@
 
 **Symbolic Derivation & Interactive Simulation with SymPy**
 
-[**Overview**](https://mzargham.github.io/hc-marimo/) · [**Live notebook**](https://mzargham.github.io/hc-marimo/notebook/) · [**Talk slides**](https://mzargham.github.io/hc-marimo/slides/) · [**Paper** (SciPy Proceedings, in review)](https://github.com/scipy-conference/scipy_proceedings/pull/1206)
+[**Overview**](https://mzargham.github.io/hc-marimo/) · [**Live notebook**](https://mzargham.github.io/hc-marimo/notebook/) · [**Talk slides**](https://mzargham.github.io/hc-marimo/slides/) · [**Paper** (SciPy Proceedings, accepted)](https://github.com/scipy-conference/scipy_proceedings/pull/1206)
 
 <!-- TODO: replace the paper link with the DOI at publication -->
 <!-- TODO: add the talk video link to the overview page and here when the SciPy 2026 recording is published -->
