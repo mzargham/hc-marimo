@@ -51,8 +51,7 @@ def title(mo):
     foundational pursuit-evasion problem through symbolic computation
     and numerical simulation.*
     [[source code](https://github.com/mzargham/hc-marimo)] ·
-    [[paper](https://github.com/scipy-conference/scipy_proceedings/pull/1206)]
-    <!-- TODO: replace the paper link with the DOI at publication -->
+    [[paper](https://proceedings.scipy.org/articles/wdyr6752)]
 
     The mathematics is derived symbolically with
     [SymPy](https://www.sympy.org), then brought to life numerically
@@ -2903,8 +2902,8 @@ def extensions(mo):
     ### References
 
     - M. Zargham, *Derivations, Not Just Simulations: Teaching Applied
-      Mathematics with Scientific Python*, SciPy Proceedings (accepted,
-      2026) — the paper built from this notebook
+      Mathematics with Scientific Python*, SciPy 2026 Proceedings,
+      https://proceedings.scipy.org/articles/wdyr6752
     - R. Isaacs, *Games of Pursuit*, RAND Corporation Paper P-257 (1951)
     - R. Isaacs, *Differential Games: A Mathematical Theory with Applications
       to Warfare and Pursuit, Control and Optimization*, John Wiley & Sons
